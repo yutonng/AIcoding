@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tax_calculation</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../assets/styles/global.css" />
+    <link rel="stylesheet" href="../../assets/styles/tax-calculation.css" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <a class="back-link" href="../../index.html">返回目录</a>
+      <p class="page-notice">叠甲：只适合美国税民，定性看自己的税负数量级是否合理，做不到和 CFA 级别的精确对比。</p>
+
+      <main class="layout">
+        <section class="panel controls">
+          <div class="section-heading">
+            <p class="section-kicker">输入区</p>
+            <h2>填写收入与扣除信息</h2>
+          </div>
+
+          <div class="field-grid top-input-row">
+            <label class="input-card" for="usSalaryInput">
+              <span class="input-label">美国应税收入（填写W2 Box1）</span>
+              <div class="input-wrap">
+                <span class="currency">USD</span>
+                <input id="usSalaryInput" type="number" min="0" step="1000" value="150000" />
+              </div>
+              <span class="input-hint">输入按美元计的全年应税收入</span>
+            </label>
+
+            <label class="input-card" for="chinaSalaryInput">
+              <span class="input-label">中国全年税前收入（不排税前扣除）</span>
+              <div class="input-wrap">
+                <span class="currency">CNY</span>
+                <input id="chinaSalaryInput" type="number" min="0" step="1000" value="0" />
+              </div>
+              <span class="input-hint">输入按人民币计的全年税前收入</span>
+            </label>
+
+            <label class="input-card" for="exchangeRate">
+              <span class="input-label">汇率</span>
+              <div class="input-wrap">
+                <span class="currency">1 USD</span>
+                <input id="exchangeRate" type="number" min="0.01" step="0.01" value="7.2" />
+              </div>
+              <span class="input-hint">用于在 USD 与 CNY 之间换算，默认 1 USD = 7.20 CNY</span>
+            </label>
+          </div>
+
+          <div class="field-grid deduction-grid">
+            <label class="input-card" for="socialDeduction">
+              <span class="input-label">中国五险一金</span>
+              <div class="input-wrap">
+                <span class="currency">CNY</span>
+                <input id="socialDeduction" type="number" min="0" step="1000" value="0" />
+              </div>
+              <span class="input-hint">填写全年个人承担部分</span>
+            </label>
+
+            <label class="input-card" for="specialDeduction">
+              <span class="input-label">中国专项附加扣除</span>
+              <div class="input-wrap">
+                <span class="currency">CNY</span>
+                <input id="specialDeduction" type="number" min="0" step="1000" value="0" />
+              </div>
+              <span class="input-hint">填写全年合计金额</span>
+            </label>
+          </div>
+
+          <button id="calculateBtn" class="primary-btn" type="button">重新计算</button>
+        </section>
+
+        <section class="panel summary-panel">
+          <div class="section-heading">
+            <p class="section-kicker">Summary</p>
+            <h2>收入换算概览</h2>
+          </div>
+          <div class="summary-grid">
+            <div class="stat-card">
+              <span class="stat-label">总收入（USD）</span>
+              <strong id="totalIncomeUsdDisplay">$0</strong>
+            </div>
+            <div class="stat-card">
+              <span class="stat-label">总收入（CNY）</span>
+              <strong id="totalIncomeCnyDisplay">¥0</strong>
+            </div>
+          </div>
+        </section>
+
+        <section class="results-grid">
+          <article class="panel result-panel china">
+            <div class="result-head">
+              <div>
+                <p class="section-kicker">China</p>
+                <h2>中国税负与补税</h2>
+              </div>
+              <div class="segmented-control result-toggle" role="group" aria-label="中国税负展示币种">
+                <button class="segment is-active" data-panel-currency="china" data-currency="USD" type="button">USD</button>
+                <button class="segment" data-panel-currency="china" data-currency="CNY" type="button">CNY</button>
+              </div>
+            </div>
+
+            <div class="stat-row">
+              <div class="stat-card">
+                <span class="stat-label">中国总税额</span>
+                <strong id="chinaTax">¥0</strong>
+              </div>
+              <div class="stat-card">
+                <span class="stat-label">中国综合税率</span>
+                <strong id="chinaRate">0%</strong>
+              </div>
+            </div>
+
+            <div class="breakdown">
+              <div class="breakdown-row">
+                <span>中国税前收入</span>
+                <strong id="chinaGross">¥0</strong>
+              </div>
+              <div class="breakdown-row">
+                <span>基本减除费用</span>
+                <strong id="chinaBasicDeduction">¥60,000</strong>
+              </div>
+              <div class="breakdown-row">
+                <span>五险一金</span>
+                <strong id="chinaSocialDeduction">¥0</strong>
+              </div>
+              <div class="breakdown-row">
+                <span>专项附加扣除</span>
+                <strong id="chinaSpecialDeduction">¥0</strong>
+              </div>
+              <div class="breakdown-row">
+                <span>应纳税所得额</span>
+                <strong id="chinaTaxable">¥0</strong>
+              </div>
+              <div class="breakdown-row">
+                <span>中国个税</span>
+                <strong id="chinaTaxOnly">¥0</strong>
+              </div>
+            </div>
+
+            <div class="top-up-card" id="topUpCard">
+              <div>
+                <p class="section-kicker">Top-Up</p>
+                <h3>中国补缴测算</h3>
+              </div>
+              <div class="top-up-amount" id="chinaTopUp">¥0</div>
+              <p class="top-up-copy" id="topUpExplanation">
+                若中国综合税率高于美国已缴且可抵扣的所得税税率，这里显示估算补缴额。
+              </p>
+            </div>
+          </article>
+
+          <article class="panel result-panel us">
+            <div class="result-head">
+              <div>
+                <p class="section-kicker">California, US</p>
+                <h2>美国加州税负分项</h2>
+              </div>
+              <div class="segmented-control result-toggle" role="group" aria-label="美国税负展示币种">
+                <button class="segment is-active" data-panel-currency="us" data-currency="USD" type="button">USD</button>
+                <button class="segment" data-panel-currency="us" data-currency="CNY" type="button">CNY</button>
+              </div>
+            </div>
+
+            <div class="stat-row">
+              <div class="stat-card">
+                <span class="stat-label">美国总税额</span>
+                <strong id="usTax">$0</strong>
+              </div>
+              <div class="stat-card">
+                <span class="stat-label">美国综合税率<br />（全税负）</span>
+                <strong id="usRate">0%</strong>
+              </div>
+              <div class="stat-card">
+                <span class="stat-label">美国综合税率<br />（仅联邦+州税）</span>
+                <strong id="usIncomeTaxRate">0%</strong>
+              </div>
+            </div>
+
+            <div class="breakdown">
+              <div class="breakdown-row">
+                <span>美国税前收入</span>
+                <strong id="usGross">$0</strong>
+              </div>
+            </div>
+
+            <div class="parallel-tax-grid">
+              <section class="tax-subsection compact-card federal-card">
+                <div class="subsection-head">
+                  <h3>Federal</h3>
+                </div>
+                <div class="breakdown compact-breakdown">
+                  <div class="breakdown-row">
+                    <span>联邦应纳税所得额</span>
+                    <strong id="federalTaxableIncome">$0</strong>
+                  </div>
+                  <div class="breakdown-row">
+                    <span>Federal Income Tax</span>
+                    <strong id="federalTax">$0</strong>
+                  </div>
+                  <div class="breakdown-row">
+                    <span>Social Security</span>
+                    <strong id="socialSecurityTax">$0</strong>
+                  </div>
+                  <div class="breakdown-row">
+                    <span>Medicare</span>
+                    <strong id="medicareTax">$0</strong>
+                  </div>
+                  <div class="breakdown-row">
+                    <span>Additional Medicare</span>
+                    <strong id="additionalMedicareTax">$0</strong>
+                  </div>
+                </div>
+              </section>
+
+              <section class="tax-subsection compact-card california-card">
+                <div class="subsection-head">
+                  <h3>CA</h3>
+                </div>
+                <div class="breakdown compact-breakdown">
+                  <div class="breakdown-row">
+                    <span>CA 应纳税所得额</span>
+                    <strong id="californiaTaxableIncome">$0</strong>
+                  </div>
+                  <div class="breakdown-row">
+                    <span>CA State Income Tax</span>
+                    <strong id="californiaTax">$0</strong>
+                  </div>
+                  <div class="breakdown-row">
+                    <span>VPDI</span>
+                    <strong id="sdiTax">$0</strong>
+                  </div>
+                </div>
+              </section>
+            </div>
+
+            <section class="tax-subsection">
+              <div class="subsection-head">
+                <h3>抵扣</h3>
+              </div>
+              <div class="breakdown">
+                <div class="breakdown-row deductible-total">
+                  <span>中国可抵扣的美国所得税</span>
+                  <strong id="creditableUsTax">$0</strong>
+                </div>
+              </div>
+            </section>
+          </article>
+        </section>
+
+        <section class="panel settlement-panel">
+          <div class="section-heading">
+            <p class="section-kicker">Settlement</p>
+            <h2>美国预缴税与补税测算</h2>
+          </div>
+          <div class="field-grid settlement-input-grid">
+            <label class="input-card" for="federalPrepaidTax">
+              <span class="input-label">美国联邦预缴税</span>
+              <div class="input-wrap">
+                <span class="currency">USD</span>
+                <input id="federalPrepaidTax" type="number" min="0" step="1000" value="0" />
+              </div>
+              <span class="input-hint">填写全年累计已预扣或预缴的联邦税</span>
+            </label>
+
+            <label class="input-card" for="statePrepaidTax">
+              <span class="input-label">美国 CA 预缴税</span>
+              <div class="input-wrap">
+                <span class="currency">USD</span>
+                <input id="statePrepaidTax" type="number" min="0" step="1000" value="0" />
+              </div>
+              <span class="input-hint">填写全年累计已预扣或预缴的 CA 州税</span>
+            </label>
+          </div>
+          <button id="settlementCalculateBtn" class="primary-btn settlement-btn" type="button">计算预缴税结算</button>
+          <div class="settlement-grid">
+            <div class="settlement-card">
+              <div class="subsection-head">
+                <h3>Federal Settlement</h3>
+              </div>
+              <div class="breakdown">
+                <div class="breakdown-row">
+                  <span>联邦预缴税</span>
+                  <strong id="federalPrepaidTaxDisplay">$0</strong>
+                </div>
+                <div class="breakdown-row balance-row">
+                  <span>联邦待补/待退</span>
+                  <strong id="federalBalance">$0</strong>
+                </div>
+              </div>
+            </div>
+
+            <div class="settlement-card">
+              <div class="subsection-head">
+                <h3>CA Settlement</h3>
+              </div>
+              <div class="breakdown">
+                <div class="breakdown-row">
+                  <span>CA 预缴税</span>
+                  <strong id="statePrepaidTaxDisplay">$0</strong>
+                </div>
+                <div class="breakdown-row balance-row">
+                  <span>CA 待补/待退</span>
+                  <strong id="stateBalance">$0</strong>
+                </div>
+              </div>
+            </div>
+
+            <div class="settlement-card settlement-total">
+              <div class="subsection-head">
+                <h3>Total Settlement</h3>
+              </div>
+              <div class="breakdown">
+                <div class="breakdown-row balance-row total-balance-row">
+                  <span>美国所得税合计待补/待退</span>
+                  <strong id="usIncomeTaxBalance">$0</strong>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel assumptions">
+          <div class="section-heading">
+            <p class="section-kicker">Assumptions</p>
+            <h2>计算假设</h2>
+          </div>
+          <div class="assumption-grid">
+            <div>
+              <h3>中国</h3>
+              <p>
+                按居民个人综合所得年算，默认扣除每年 <strong>60,000 元</strong>
+                基本减除费用，并支持手动输入全年五险一金与专项附加扣除。
+              </p>
+            </div>
+            <div>
+              <h3>美国加州</h3>
+              <p>
+                按 <strong>2025 tax year</strong>、<strong>Single</strong>、
+                <strong>standard deduction</strong> 估算，分开显示联邦税、CA 州税、Social Security、Medicare、Additional
+                Medicare 和 VPDI，并支持手动输入联邦/州预缴税。
+              </p>
+            </div>
+          </div>
+          <p class="footnote">
+            页面里高亮的“可抵扣”部分默认仅包含美国所得税类项目
+            <strong>Federal Income Tax + CA State Income Tax</strong>，不把 payroll taxes
+            视为可在中国抵免的所得税。
+          </p>
+        </section>
+      </main>
+    </div>
+
+    <script src="../../assets/scripts/tax-calculation.js"></script>
+  </body>
+</html>

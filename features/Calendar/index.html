@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Calendar</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../assets/styles/global.css" />
+    <link rel="stylesheet" href="../../assets/styles/calendar.css" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <a class="back-link" href="../../index.html">返回目录</a>
+
+      <main class="calendar-layout">
+        <section class="panel hero-panel">
+          <div class="section-heading">
+            <div class="hero-title-row">
+              <p class="section-kicker">Feature / Calendar</p>
+              <div class="hero-title-line">
+                <h1>Calendar</h1>
+                <div class="hero-badge-group">
+                  <span class="hero-badge hero-badge-strong">Year 2026</span>
+                  <span class="hero-badge hero-badge-strong" id="asOfDate">As of --</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel upload-panel">
+          <div class="section-heading">
+            <div>
+              <p class="section-kicker">Uploads</p>
+              <h2>上传出入境记录</h2>
+            </div>
+          </div>
+
+          <div class="upload-grid">
+            <label class="upload-card" for="usRecordsInput">
+              <span class="upload-title">美国出入境记录</span>
+              <span class="upload-copy">支持上传多张图片或 PDF。本地演示版可以直接调用 OCR 识别文字。</span>
+              <input id="usRecordsInput" class="file-input" type="file" accept="image/*,.pdf,application/pdf" multiple />
+              <span class="upload-action">选择文件</span>
+            </label>
+
+            <label class="upload-card" for="chinaRecordsInput">
+              <span class="upload-title">中国出入境记录</span>
+              <span class="upload-copy">支持上传多张图片或 PDF。建议按时间顺序整理后再识别。</span>
+              <input id="chinaRecordsInput" class="file-input" type="file" accept="image/*,.pdf,application/pdf" multiple />
+              <span class="upload-action">选择文件</span>
+            </label>
+          </div>
+
+          <div class="preview-grid">
+            <section class="preview-panel">
+              <div class="preview-head">
+                <h3>美国 i94</h3>
+                <div class="preview-head-actions">
+                  <span id="usPreviewCount" class="preview-count">0 个文件</span>
+                </div>
+              </div>
+              <div id="usPreviewList" class="preview-list empty-state">还没有上传文件</div>
+            </section>
+
+            <section class="preview-panel">
+              <div class="preview-head">
+                <h3>中国出入境记录</h3>
+                <div class="preview-head-actions">
+                  <span id="chinaPreviewCount" class="preview-count">0 个文件</span>
+                </div>
+              </div>
+              <div id="chinaPreviewList" class="preview-list empty-state">还没有上传文件</div>
+            </section>
+          </div>
+
+          <div class="upload-actions">
+            <button id="runAllOcrBtn" class="primary-btn" type="button">识别记录</button>
+          </div>
+
+        </section>
+
+        <section class="panel records-panel">
+          <div class="section-heading">
+            <div>
+              <p class="section-kicker">Stay Segments</p>
+              <h2>停留国家识别结果</h2>
+            </div>
+          </div>
+
+          <div id="segmentList" class="segment-list empty-state">还没有结构化停留区间</div>
+        </section>
+
+        <section class="panel records-panel">
+          <div class="section-heading">
+            <div>
+              <p class="section-kicker">Leave</p>
+              <h2>休假区间</h2>
+            </div>
+          </div>
+
+          <div class="leave-form">
+            <label class="leave-field">
+              <span>开始日期</span>
+              <input id="leaveStartInput" type="date" min="2026-01-01" max="2026-12-31" />
+            </label>
+            <label class="leave-field">
+              <span>结束日期</span>
+              <input id="leaveEndInput" type="date" min="2026-01-01" max="2026-12-31" />
+            </label>
+            <button id="addLeaveBtn" class="ghost-btn" type="button">添加休假区间</button>
+          </div>
+
+          <div id="leaveList" class="leave-list empty-state">还没有休假区间</div>
+        </section>
+
+        <section class="results-shell">
+          <section class="panel result-module">
+            <div class="section-heading">
+              <div>
+                <p class="section-kicker">Module 1</p>
+                <h2>2026 自然日统计</h2>
+              </div>
+            </div>
+            <div class="summary-grid calendar-summary-grid">
+              <article class="stat-card">
+                <span class="stat-label">已过去的自然日</span>
+                <strong id="daysElapsedDisplay">0</strong>
+              </article>
+              <article class="stat-card">
+                <span class="stat-label">在美国</span>
+                <strong id="daysInUsDisplay">0</strong>
+              </article>
+              <article class="stat-card">
+                <span class="stat-label">在中国</span>
+                <strong id="daysInChinaDisplay">0</strong>
+              </article>
+              <article class="stat-card">
+                <span class="stat-label">其他国家</span>
+                <strong id="daysInOtherDisplay">0</strong>
+              </article>
+            </div>
+          </section>
+
+          <section class="panel result-module">
+            <div class="section-heading">
+              <div>
+                <p class="section-kicker">Module 2</p>
+                <h2>2026 美国工作日统计</h2>
+              </div>
+            </div>
+            <div class="summary-grid calendar-summary-grid">
+              <article class="stat-card">
+                <span class="stat-label">已过去的工作日</span>
+                <strong id="businessDaysElapsedDisplay">0</strong>
+              </article>
+              <article class="stat-card">
+                <span class="stat-label">在美国天数</span>
+                <strong id="businessDaysInUsDisplay">0</strong>
+              </article>
+              <article class="stat-card">
+                <span class="stat-label">在中国天数</span>
+                <strong id="businessDaysInChinaDisplay">0</strong>
+              </article>
+              <article class="stat-card">
+                <span class="stat-label">其他国家天数</span>
+                <strong id="businessDaysInOtherDisplay">0</strong>
+              </article>
+            </div>
+          </section>
+        </section>
+
+        <section class="panel notes-panel">
+          <div class="section-heading">
+            <div>
+              <p class="section-kicker">Rules</p>
+              <h2>口径说明</h2>
+            </div>
+          </div>
+          <div class="notes-grid">
+            <article>
+              <h3>统计范围</h3>
+              <p>从 2026 年 1 月 1 日开始，统计到今天为止；若当前日期晚于 2026 年 12 月 31 日，则只统计到 2026 年末。</p>
+            </article>
+            <article>
+              <h3>美国优先</h3>
+              <p>如果同一天既命中美国区间，又命中中国或其他国家区间，这一天直接算作美国。</p>
+            </article>
+            <article>
+              <h3>工作日规则</h3>
+              <p>美国工作日统计会排除周末和美国联邦节假日的 observed holiday。</p>
+            </article>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="../../assets/scripts/calendar.js"></script>
+  </body>
+</html>
