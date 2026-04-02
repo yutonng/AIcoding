@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Strengths Finder</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../assets/styles/global.css" />
+    <link rel="stylesheet" href="../../assets/styles/strengths-finder.css" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <a class="back-link" href="../../index.html">返回目录</a>
+
+      <main class="strengths-layout">
+        <section class="panel intro-panel">
+          <div class="section-heading">
+            <div>
+              <p class="section-kicker">Feature / Strengths Finder</p>
+              <h1>Strengths Finder</h1>
+            </div>
+            <div class="intro-badges">
+              <span class="intro-badge">180 Questions</span>
+              <span class="intro-badge" id="progressBadge">0 / 180</span>
+            </div>
+          </div>
+          <p class="section-description">180 题题库已接入。当前会把每道题的左右描述映射为多个主题信号，最后生成 34 个维度的排序结果。</p>
+        </section>
+
+        <section id="quizPanel" class="panel quiz-panel">
+          <div class="section-heading">
+            <div>
+              <p class="section-kicker">Question</p>
+              <h2 id="questionTitle">第 1 题</h2>
+            </div>
+            <button id="finishEarlyBtn" class="ghost-btn" type="button">结束答题（测试）</button>
+          </div>
+
+          <div class="progress-track" aria-hidden="true">
+            <div id="progressFill" class="progress-fill"></div>
+          </div>
+
+          <div class="question-card">
+            <div class="prompt-grid">
+              <article class="prompt-block left">
+                <span class="prompt-label">左侧描述</span>
+                <p id="leftPrompt" class="prompt-copy"></p>
+              </article>
+              <article class="prompt-block right">
+                <span class="prompt-label">右侧描述</span>
+                <p id="rightPrompt" class="prompt-copy"></p>
+              </article>
+            </div>
+
+            <div id="optionsList" class="options-list" role="radiogroup" aria-label="答题选项"></div>
+          </div>
+        </section>
+
+        <section id="resultPanel" class="panel result-panel hidden">
+          <div class="section-heading">
+            <div>
+              <p class="section-kicker">Result</p>
+              <h2>答题结果</h2>
+            </div>
+          </div>
+
+          <section class="distribution-section">
+            <div id="domainDistributionBar" class="domain-distribution-bar"></div>
+            <div id="domainDistributionLegend" class="domain-distribution-legend"></div>
+          </section>
+
+          <section class="result-copy">
+            <p>这张图展示了 34 个才干主题在四大领域中的相对分布。</p>
+            <p>你可以先从领域分布看出自己更偏向哪类优势，再结合下方矩阵查看各主题在整体中的排序位置。</p>
+            <p>下方每张卡片中的数字表示该主题在全部 34 个维度中的排名。</p>
+          </section>
+
+          <section class="matrix-section">
+            <div class="matrix-head">
+              <h3 class="matrix-title">才干在四大领域的象限分析</h3>
+              <div class="matrix-toggle" role="tablist" aria-label="矩阵展示方式">
+                <button id="fixedOrderBtn" class="matrix-toggle-btn active" type="button">固定顺序</button>
+                <button id="rankOrderBtn" class="matrix-toggle-btn" type="button">按排名展示</button>
+              </div>
+            </div>
+            <div id="domainBoards" class="domain-boards report-style"></div>
+          </section>
+
+          <div class="result-actions">
+            <button id="restartBtn" class="primary-btn" type="button">重新开始</button>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="../../assets/scripts/strengths-finder-questions.js"></script>
+    <script src="../../assets/scripts/strengths-finder-model.js"></script>
+    <script src="../../assets/scripts/strengths-finder.js"></script>
+    <script>
+      (() => {
+        const leftPrompt = document.querySelector("#leftPrompt");
+        const rightPrompt = document.querySelector("#rightPrompt");
+        const optionsList = document.querySelector("#optionsList");
+        const questionTitle = document.querySelector("#questionTitle");
+        const progressBadge = document.querySelector("#progressBadge");
+        const progressFill = document.querySelector("#progressFill");
+        const finishEarlyBtn = document.querySelector("#finishEarlyBtn");
+        const quizPanel = document.querySelector("#quizPanel");
+        const resultPanel = document.querySelector("#resultPanel");
+        const restartBtn = document.querySelector("#restartBtn");
+        const domainBoards = document.querySelector("#domainBoards");
+        const domainDistributionBar = document.querySelector("#domainDistributionBar");
+        const domainDistributionLegend = document.querySelector("#domainDistributionLegend");
+        const fixedOrderBtn = document.querySelector("#fixedOrderBtn");
+        const rankOrderBtn = document.querySelector("#rankOrderBtn");
+
+        const domainThemeOrder = {
+          Executing: ["Achiever", "Arranger", "Belief", "Deliberative", "Discipline", "Consistency", "Focus", "Responsibility", "Restorative"],
+          Influencing: ["Activator", "Command", "Communication", "Competition", "Maximizer", "SelfAssurance", "Significance", "Woo"],
+          RelationshipBuilding: ["Adaptability", "Connectedness", "Developer", "Empathy", "Harmony", "Includer", "Individualization", "Positivity", "Relator"],
+          StrategicThinking: ["Analytical", "Context", "Futuristic", "Ideation", "Input", "Intellection", "Learner", "Strategic"],
+        };
+
+        if (!leftPrompt || leftPrompt.textContent.trim()) {
+          return;
+        }
+
+        const fallbackQuestions = Array.isArray(window.__STRENGTHS_FINDER_QUESTIONS__)
+          ? window.__STRENGTHS_FINDER_QUESTIONS__
+          : [];
+        const fallbackModel = window.__STRENGTHS_FINDER_MODEL__ || {};
+        const fallbackThemeDefinitions = Array.isArray(fallbackModel.themeDefinitions)
+          ? fallbackModel.themeDefinitions
+          : [];
+        const fallbackDomainDefinitions = fallbackModel.domainDefinitions || {};
+
+        if (fallbackQuestions.length === 0 || !optionsList) {
+          return;
+        }
+
+        const optionDefinitions = [
+          { value: -2, label: "左侧的描述完全符合自己" },
+          { value: -1, label: "左侧的描述更符合自己" },
+          { value: 0, label: "中性" },
+          { value: 1, label: "右侧的描述更符合自己" },
+          { value: 2, label: "右侧的描述完全符合自己" },
+        ];
+        const introPanel = document.querySelector(".intro-panel");
+
+        let currentIndex = 0;
+        let autoFilledCount = 0;
+        let answers = fallbackQuestions.map(() => null);
+        let preparedQuestions = fallbackQuestions;
+        let matrixDisplayMode = "fixed";
+
+        function randomChoice(items) {
+          if (!Array.isArray(items) || items.length === 0) {
+            return null;
+          }
+
+          if (window.crypto && typeof window.crypto.getRandomValues === "function") {
+            const buffer = new Uint32Array(1);
+            window.crypto.getRandomValues(buffer);
+            return items[buffer[0] % items.length];
+          }
+
+          return items[Math.floor(Math.random() * items.length)];
+        }
+
+        try {
+          preparedQuestions =
+            typeof fallbackModel.enrichQuestions === "function"
+              ? fallbackModel.enrichQuestions(fallbackQuestions)
+              : fallbackQuestions;
+        } catch (error) {
+          console.error("Fallback model enrichment failed.", error);
+          preparedQuestions = fallbackQuestions;
+        }
+
+        function answeredCount() {
+          return answers.filter((answer) => answer !== null).length;
+        }
+
+        function updateProgress() {
+          if (progressBadge) {
+            progressBadge.textContent = `${answeredCount()} / ${preparedQuestions.length}`;
+          }
+          if (progressFill) {
+            progressFill.style.width = `${(answeredCount() / preparedQuestions.length) * 100}%`;
+          }
+        }
+
+        function renderQuestion() {
+          const question = preparedQuestions[currentIndex];
+          if (!question) {
+            return;
+          }
+
+          if (questionTitle) {
+            questionTitle.textContent = `第 ${question.id} 题`;
+          }
+          leftPrompt.textContent = question.leftText;
+          rightPrompt.textContent = question.rightText;
+          optionsList.innerHTML = optionDefinitions
+            .map(
+              (option) => `
+                <button class="option-button" type="button" data-value="${option.value}">
+                  <span class="option-score">${option.value === 0 ? "·" : option.value < 0 ? `L${Math.abs(option.value)}` : `R${option.value}`}</span>
+                  <span>${option.label}</span>
+                </button>
+              `,
+            )
+            .join("");
+        }
+
+        function createEmptyThemeScores() {
+          return Object.fromEntries(fallbackThemeDefinitions.map((theme) => [theme.key, 0]));
+        }
+
+        function addSignals(scoreMap, signals, factor) {
+          signals.forEach((signal) => {
+            scoreMap[signal.theme] = (scoreMap[signal.theme] || 0) + signal.weight * factor;
+          });
+        }
+
+        function calculateThemeRanking() {
+          if (fallbackThemeDefinitions.length === 0) {
+            return [];
+          }
+
+          const scoreMap = createEmptyThemeScores();
+
+          preparedQuestions.forEach((question, index) => {
+            const answer = answers[index];
+            if (answer === null) {
+              return;
+            }
+
+            if (answer < 0) {
+              addSignals(scoreMap, question.leftSignals || [], Math.abs(answer));
+              return;
+            }
+
+            if (answer > 0) {
+              addSignals(scoreMap, question.rightSignals || [], Math.abs(answer));
+              return;
+            }
+
+            addSignals(scoreMap, question.leftSignals || [], 0.35);
+            addSignals(scoreMap, question.rightSignals || [], 0.35);
+          });
+
+          return fallbackThemeDefinitions
+            .map((theme) => ({
+              ...theme,
+              score: Number((scoreMap[theme.key] || 0).toFixed(2)),
+            }))
+            .sort((a, b) => b.score - a.score)
+            .map((theme, index) => ({
+              ...theme,
+              rank: index + 1,
+            }));
+        }
+
+        function getIntensityClass(rank) {
+          if (rank <= 3) {
+            return "tier-1";
+          }
+          if (rank <= 6) {
+            return "tier-2";
+          }
+          if (rank <= 10) {
+            return "tier-3";
+          }
+          if (rank <= 15) {
+            return "tier-4";
+          }
+          if (rank <= 21) {
+            return "tier-5";
+          }
+          if (rank <= 27) {
+            return "tier-6";
+          }
+          return "tier-7";
+        }
+
+        function renderDomainDistribution(ranking) {
+          if (!domainDistributionBar || !domainDistributionLegend) {
+            return;
+          }
+
+          const domainOrder = ["RelationshipBuilding", "StrategicThinking", "Executing", "Influencing"];
+          const totals = Object.fromEntries(domainOrder.map((key) => [key, 0]));
+
+          ranking.forEach((theme) => {
+            totals[theme.domain] += theme.score;
+          });
+
+          const totalScore = Object.values(totals).reduce((sum, value) => sum + value, 0) || 1;
+
+          domainDistributionBar.innerHTML = domainOrder
+            .map((domainKey) => {
+              const domain = fallbackDomainDefinitions[domainKey] || { accent: "#1f1d1a" };
+              const width = ((totals[domainKey] / totalScore) * 100).toFixed(2);
+              return `<div class="distribution-segment" style="--accent:${domain.accent}; width:${width}%"></div>`;
+            })
+            .join("");
+
+          domainDistributionLegend.innerHTML = domainOrder
+            .map((domainKey) => {
+              const domain = fallbackDomainDefinitions[domainKey] || { accent: "#1f1d1a", label: domainKey };
+              const width = ((totals[domainKey] / totalScore) * 100).toFixed(2);
+              return `
+                <div class="distribution-legend-item" style="--accent:${domain.accent}; width:${width}%">
+                  <span class="distribution-label">${domain.label}</span>
+                  <span class="distribution-value">${width}%</span>
+                </div>
+              `;
+            })
+            .join("");
+        }
+
+        function renderDomainBoards(ranking) {
+          if (!domainBoards) {
+            return;
+          }
+
+          const domainOrder = ["Executing", "Influencing", "RelationshipBuilding", "StrategicThinking"];
+          const rankingMap = Object.fromEntries(ranking.map((theme) => [theme.key, theme]));
+
+          domainBoards.innerHTML = domainOrder
+            .map((domainKey) => {
+              const domain = fallbackDomainDefinitions[domainKey] || {
+                accent: "#1f1d1a",
+                soft: "#f3efe7",
+                label: domainKey,
+              };
+              const themes =
+                matrixDisplayMode === "rank"
+                  ? ranking.filter((theme) => theme.domain === domainKey)
+                  : (domainThemeOrder[domainKey] || []).map((themeKey) => rankingMap[themeKey]).filter(Boolean);
+              const cards = themes
+                .map(
+                  (theme) => `
+                    <article class="theme-tile ${getIntensityClass(theme.rank)}" style="--accent:${domain.accent}; --soft:${domain.soft};">
+                      <span class="theme-rank">${theme.rank}</span>
+                      <strong>${theme.displayName}</strong>
+                    </article>
+                  `,
+                )
+                .join("");
+
+              return `
+                <section class="domain-board">
+                  <div class="domain-board-head" style="--accent:${domain.accent};">
+                    <h4>${domain.label}</h4>
+                  </div>
+                  <div class="theme-tile-grid">
+                    ${cards}
+                  </div>
+                </section>
+              `;
+            })
+            .join("");
+        }
+
+        function showResults() {
+          const ranking = calculateThemeRanking();
+          if (ranking.length > 0) {
+            renderDomainDistribution(ranking);
+            renderDomainBoards(ranking);
+          } else if (domainBoards) {
+            domainBoards.innerHTML = '<p class="muted">当前为兜底调试模式，题目流程已恢复；评分矩阵会在主题模型可用时正常显示。</p>';
+          }
+          if (introPanel) {
+            introPanel.classList.add("hidden");
+          }
+          if (quizPanel) {
+            quizPanel.classList.add("hidden");
+          }
+          if (resultPanel) {
+            resultPanel.classList.remove("hidden");
+          }
+        }
+
+        function answerQuestion(score) {
+          answers[currentIndex] = score;
+          updateProgress();
+
+          if (currentIndex >= preparedQuestions.length - 1) {
+            showResults();
+            return;
+          }
+
+          currentIndex += 1;
+          renderQuestion();
+        }
+
+        optionsList.addEventListener("click", (event) => {
+          const target = event.target instanceof HTMLElement ? event.target.closest("[data-value]") : null;
+          if (!target) {
+            return;
+          }
+
+          const score = Number(target.getAttribute("data-value"));
+          if (!Number.isInteger(score)) {
+            return;
+          }
+
+          answerQuestion(score);
+        });
+
+        if (finishEarlyBtn) {
+            finishEarlyBtn.addEventListener("click", () => {
+              answers = answers.map((answer) => {
+              if (answer !== null) {
+                return answer;
+              }
+              autoFilledCount += 1;
+              return randomChoice([-2, -1, 0, 1, 2]);
+            });
+            updateProgress();
+            showResults();
+          });
+        }
+
+        if (restartBtn) {
+          restartBtn.addEventListener("click", () => {
+            answers = fallbackQuestions.map(() => null);
+            preparedQuestions =
+              typeof fallbackModel.enrichQuestions === "function"
+                ? fallbackModel.enrichQuestions(fallbackQuestions)
+                : fallbackQuestions;
+            currentIndex = 0;
+            autoFilledCount = 0;
+            if (introPanel) {
+              introPanel.classList.remove("hidden");
+            }
+            if (resultPanel) {
+              resultPanel.classList.add("hidden");
+            }
+            if (quizPanel) {
+              quizPanel.classList.remove("hidden");
+            }
+            updateProgress();
+            renderQuestion();
+          });
+        }
+
+        function updateMatrixModeButtons() {
+          if (fixedOrderBtn) {
+            fixedOrderBtn.classList.toggle("active", matrixDisplayMode === "fixed");
+          }
+          if (rankOrderBtn) {
+            rankOrderBtn.classList.toggle("active", matrixDisplayMode === "rank");
+          }
+        }
+
+        if (fixedOrderBtn) {
+          fixedOrderBtn.addEventListener("click", () => {
+            matrixDisplayMode = "fixed";
+            updateMatrixModeButtons();
+            if (!resultPanel || resultPanel.classList.contains("hidden")) {
+              return;
+            }
+            const ranking = calculateThemeRanking();
+            renderDomainBoards(ranking);
+          });
+        }
+
+        if (rankOrderBtn) {
+          rankOrderBtn.addEventListener("click", () => {
+            matrixDisplayMode = "rank";
+            updateMatrixModeButtons();
+            if (!resultPanel || resultPanel.classList.contains("hidden")) {
+              return;
+            }
+            const ranking = calculateThemeRanking();
+            renderDomainBoards(ranking);
+          });
+        }
+
+        updateMatrixModeButtons();
+        updateProgress();
+        renderQuestion();
+      })();
+    </script>
+  </body>
+</html>
