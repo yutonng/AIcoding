@@ -42,39 +42,37 @@
           </div>
 
           <div class="upload-grid">
-            <label class="upload-card" for="usRecordsInput">
-              <span class="upload-title">美国出入境记录</span>
-              <span class="upload-copy">支持上传多张图片或 PDF。本地演示版可以直接调用 OCR 识别文字。</span>
-              <input id="usRecordsInput" class="file-input" type="file" accept="image/*,.pdf,application/pdf" multiple />
-              <span class="upload-action">选择文件</span>
-            </label>
-
-            <label class="upload-card" for="chinaRecordsInput">
-              <span class="upload-title">中国出入境记录</span>
-              <span class="upload-copy">支持上传多张图片或 PDF。建议按时间顺序整理后再识别。</span>
-              <input id="chinaRecordsInput" class="file-input" type="file" accept="image/*,.pdf,application/pdf" multiple />
-              <span class="upload-action">选择文件</span>
-            </label>
-          </div>
-
-          <div class="preview-grid">
-            <section class="preview-panel">
+            <section class="preview-panel upload-module">
               <div class="preview-head">
-                <h3>美国 i94</h3>
+                <div>
+                  <h3>美国 i94</h3>
+                  <p class="upload-module-copy">支持 PDF 和图片</p>
+                </div>
                 <div class="preview-head-actions">
                   <span id="usPreviewCount" class="preview-count">0 个文件</span>
                 </div>
               </div>
+              <label class="upload-card" for="usRecordsInput">
+                <span class="upload-action">选择文件</span>
+                <input id="usRecordsInput" class="file-input" type="file" accept="image/*,.pdf,application/pdf" multiple />
+              </label>
               <div id="usPreviewList" class="preview-list empty-state">还没有上传文件</div>
             </section>
 
-            <section class="preview-panel">
+            <section class="preview-panel upload-module">
               <div class="preview-head">
-                <h3>中国出入境记录</h3>
+                <div>
+                  <h3>中国出入境记录</h3>
+                  <p class="upload-module-copy">支持 PDF 和图片</p>
+                </div>
                 <div class="preview-head-actions">
                   <span id="chinaPreviewCount" class="preview-count">0 个文件</span>
                 </div>
               </div>
+              <label class="upload-card" for="chinaRecordsInput">
+                <span class="upload-action">选择文件</span>
+                <input id="chinaRecordsInput" class="file-input" type="file" accept="image/*,.pdf,application/pdf" multiple />
+              </label>
               <div id="chinaPreviewList" class="preview-list empty-state">还没有上传文件</div>
             </section>
           </div>
