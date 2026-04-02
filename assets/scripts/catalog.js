@@ -7,6 +7,14 @@ const features = [
     href: "./features/tax_calculation/index.html",
     tags: ["Tax", "Calculator", "CN / US"],
   },
+  {
+    slug: "Calendar",
+    title: "Calendar",
+    description: "上传中美出入境记录，识别停留国家区间并统计自然日与工作日。",
+    status: "Available",
+    href: "./features/Calendar/index.html",
+    tags: ["Calendar", "Travel", "OCR"],
+  },
 ];
 
 const catalogRoot = document.querySelector("#featureCatalog");
