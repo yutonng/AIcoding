@@ -19,26 +19,31 @@ try {
 }
 
 const optionDefinitions = [
-  { value: -2, label: "左侧的描述完全符合自己" },
-  { value: -1, label: "左侧的描述更符合自己" },
+  { value: -2, label: "强烈同意" },
+  { value: -1, label: "同意" },
   { value: 0, label: "中性" },
-  { value: 1, label: "右侧的描述更符合自己" },
-  { value: 2, label: "右侧的描述完全符合自己" },
+  { value: 1, label: "同意" },
+  { value: 2, label: "强烈同意" },
 ];
 
-const introPanel = document.querySelector(".intro-panel");
 const progressBadge = document.querySelector("#progressBadge");
 const questionTitle = document.querySelector("#questionTitle");
 const leftPrompt = document.querySelector("#leftPrompt");
 const rightPrompt = document.querySelector("#rightPrompt");
 const optionsList = document.querySelector("#optionsList");
 const finishEarlyBtn = document.querySelector("#finishEarlyBtn");
+const viewBindingStatsBtn = document.querySelector("#viewBindingStatsBtn");
+const closeBindingStatsBtn = document.querySelector("#closeBindingStatsBtn");
+const debugToggleBtn = document.querySelector("#debugToggleBtn");
+const debugMenu = document.querySelector("#debugMenu");
 const quizPanel = document.querySelector("#quizPanel");
 const resultPanel = document.querySelector("#resultPanel");
 const progressFill = document.querySelector("#progressFill");
 const domainBoards = document.querySelector("#domainBoards");
 const domainDistributionBar = document.querySelector("#domainDistributionBar");
 const domainDistributionLegend = document.querySelector("#domainDistributionLegend");
+const bindingStatsSection = document.querySelector("#bindingStatsSection");
+const bindingStatsPanel = document.querySelector("#bindingStatsPanel");
 const fixedOrderBtn = document.querySelector("#fixedOrderBtn");
 const rankOrderBtn = document.querySelector("#rankOrderBtn");
 const restartBtn = document.querySelector("#restartBtn");
@@ -130,9 +135,8 @@ function renderQuestion() {
   optionsList.innerHTML = optionDefinitions
     .map(
       (option) => `
-        <button class="option-button" type="button" data-value="${option.value}">
-          <span class="option-score">${option.value === 0 ? "·" : option.value < 0 ? `L${Math.abs(option.value)}` : `R${option.value}`}</span>
-          <span>${option.label}</span>
+        <button class="option-button option-${String(option.value).replace("-", "n")}" type="button" data-value="${option.value}">
+          <span class="option-copy">${option.label}</span>
         </button>
       `,
     )
@@ -286,6 +290,63 @@ function renderDomainBoards(ranking) {
     .join("");
 }
 
+function renderBindingStatsPanel() {
+  if (!bindingStatsPanel) {
+    return;
+  }
+
+  const stats = Array.isArray(window.__STRENGTHS_FINDER_BINDING_STATS__) ? window.__STRENGTHS_FINDER_BINDING_STATS__ : [];
+  if (stats.length === 0) {
+    bindingStatsPanel.innerHTML = '<p class="muted">当前还没有可显示的绑定统计。</p>';
+    return;
+  }
+
+  bindingStatsPanel.innerHTML = `
+    <div class="binding-stats-table">
+      <div class="binding-stats-row binding-stats-header">
+        <span>主题</span>
+        <span>领域</span>
+        <span>总绑定</span>
+        <span>左侧</span>
+        <span>右侧</span>
+        <span>总权重</span>
+      </div>
+      ${stats
+        .map((item) => {
+          const domain = domainDefinitions[item.domain] || { label: item.domain };
+          return `
+            <div class="binding-stats-row">
+              <span>${item.displayName}</span>
+              <span>${domain.label}</span>
+              <span>${item.totalCount}</span>
+              <span>${item.leftCount}</span>
+              <span>${item.rightCount}</span>
+              <span>${item.totalWeight}</span>
+            </div>
+          `;
+        })
+        .join("")}
+    </div>
+  `;
+}
+
+function setDebugMenu(open) {
+  if (!debugMenu || !debugToggleBtn) {
+    return;
+  }
+
+  debugMenu.classList.toggle("hidden", !open);
+  debugToggleBtn.setAttribute("aria-expanded", open ? "true" : "false");
+}
+
+function openBindingStats() {
+  renderBindingStatsPanel();
+  if (bindingStatsSection) {
+    bindingStatsSection.classList.remove("hidden");
+  }
+  setDebugMenu(false);
+}
+
 function showResults() {
   const ranking = calculateThemeRanking();
 
@@ -293,10 +354,8 @@ function showResults() {
     renderDomainDistribution(ranking);
     renderDomainBoards(ranking);
   }
+  renderBindingStatsPanel();
 
-  if (introPanel) {
-    introPanel.classList.add("hidden");
-  }
   if (quizPanel) {
     quizPanel.classList.add("hidden");
   }
@@ -339,9 +398,6 @@ function restartQuiz() {
   createEmptyState();
   matrixDisplayMode = "fixed";
   updateMatrixModeButtons();
-  if (introPanel) {
-    introPanel.classList.remove("hidden");
-  }
   if (resultPanel) {
     resultPanel.classList.add("hidden");
   }
@@ -371,6 +427,27 @@ if (optionsList) {
 if (finishEarlyBtn) {
   finishEarlyBtn.addEventListener("click", () => {
     finishEarly();
+  });
+}
+
+if (debugToggleBtn) {
+  debugToggleBtn.addEventListener("click", () => {
+    const isHidden = !debugMenu || debugMenu.classList.contains("hidden");
+    setDebugMenu(isHidden);
+  });
+}
+
+if (viewBindingStatsBtn) {
+  viewBindingStatsBtn.addEventListener("click", () => {
+    openBindingStats();
+  });
+}
+
+if (closeBindingStatsBtn) {
+  closeBindingStatsBtn.addEventListener("click", () => {
+    if (bindingStatsSection) {
+      bindingStatsSection.classList.add("hidden");
+    }
   });
 }
 

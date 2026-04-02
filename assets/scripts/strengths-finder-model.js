@@ -63,11 +63,11 @@ const themeDefinitions = [
 ];
 
 const themeKeywords = {
-  Achiever: [["努力", 1.4], ["高效", 1.2], ["工作", 0.7], ["成就", 1.3], ["进步", 1.1], ["业绩", 1.2], ["持久", 1.1], ["任务", 0.6]],
+  Achiever: [["努力", 1.1], ["高效", 1.2], ["成就", 1.45], ["业绩", 1.35], ["持久", 1.15], ["完成任务", 0.85], ["达成", 0.9], ["产出", 0.95], ["进步", 0.18], ["工作", 0.05], ["任务", 0.05]],
   Arranger: [["统筹", 1.6], ["组织", 1.4], ["协调", 1.2], ["同时", 1.1], ["几件事", 1.1], ["安排", 1.2], ["张罗", 1.3], ["复杂事务", 1.2]],
   Belief: [["价值观", 1.6], ["信仰", 1.8], ["原则", 1.4], ["哲学", 1.3], ["意义", 1.1], ["正直", 1.2], ["生活有目的", 1.4]],
   Consistency: [["平等", 1.5], ["规则", 1.4], ["规矩", 1.3], ["公平", 1.7], ["制度", 1.2], ["统一", 1.1]],
-  Deliberative: [["审慎", 1.8], ["确认无误", 1.6], ["谨慎", 1.4], ["风险", 1.2], ["压力", 0.6], ["确保", 0.8], ["慢", 0.8]],
+  Deliberative: [["审慎", 1.8], ["确认无误", 1.7], ["谨慎", 1.5], ["风险", 1.2], ["确保", 1.0], ["稳妥", 1.5], ["慎重", 1.5], ["确认", 1.1], ["避免出错", 1.6], ["先想清楚", 1.5], ["不冒险", 1.4], ["小心", 1.15], ["三思", 1.35], ["慢一点", 1.0], ["先确认", 1.45], ["行动无误", 1.55], ["确保成效", 1.35], ["不出错", 1.5], ["先核实", 1.45]],
   Discipline: [["纪律", 1.7], ["整洁", 1.4], ["井井有条", 1.4], ["按部就班", 1.2], ["规章制度", 1.4], ["检查", 1.2], ["清扫", 0.9]],
   Focus: [["专注", 1.6], ["目标", 1.3], ["集中", 1.2], ["眼前的事", 1.1], ["有始有终", 1.1], ["一次只做一件事", 1.5], ["长期", 0.8]],
   Responsibility: [["责任", 1.8], ["说到做到", 1.5], ["答应别人的事", 1.4], ["完成", 0.7], ["期限", 0.8], ["使命", 0.7]],
@@ -88,7 +88,7 @@ const themeKeywords = {
   Includer: [["包容", 1.8], ["接受各种类型", 1.6], ["每个人", 1.0], ["不排斥", 1.4], ["所有人", 1.0], ["融入", 1.0]],
   Individualization: [["个别", 1.8], ["个性特点", 1.5], ["特点", 1.1], ["不同的人", 1.0], ["个别激励", 1.4], ["背景", 0.8]],
   Positivity: [["积极", 1.8], ["欢乐", 1.4], ["兴奋", 1.3], ["快乐", 1.2], ["愉快", 1.1], ["轻松", 0.9], ["激动不已", 1.1]],
-  Relator: [["交往", 1.7], ["知己", 1.4], ["朋友", 1.0], ["一起", 0.7], ["合作伙伴", 0.9], ["亲密", 1.1], ["老朋友", 1.3]],
+  Relator: [["知己", 1.6], ["亲密", 1.4], ["老朋友", 1.4], ["合作伙伴", 0.7], ["深交", 1.4], ["长期关系", 1.4]],
   Analytical: [["分析", 1.8], ["因果", 1.4], ["数据", 1.3], ["规律", 1.2], ["准确信息", 1.1], ["研究原因", 1.1], ["统计数字", 1.1]],
   Context: [["回顾", 1.8], ["过去", 1.3], ["历史", 1.5], ["小时候", 1.0], ["总结教训", 1.1], ["研究过去", 1.2]],
   Futuristic: [["前瞻", 1.8], ["未来", 1.5], ["展望", 1.3], ["远景", 1.2], ["50年后", 1.2], ["下一个", 0.9]],
@@ -99,7 +99,36 @@ const themeKeywords = {
   Strategic: [["战略", 1.8], ["战略眼光", 1.5], ["应对", 1.1], ["未来可能发生", 1.1], ["形势", 0.9], ["路径", 0.8], ["策划", 1.0]],
 };
 
+const themeAdjustment = {
+  Achiever: 0.9,
+  Deliberative: 1.12,
+};
+
 const themeLookup = Object.fromEntries(themeDefinitions.map((theme) => [theme.key, theme]));
+
+const themeCalibrationBias = {
+  Positivity: 0.62,
+  Communication: 0.72,
+  Woo: 0.74,
+  Analytical: 0.82,
+  Achiever: 0.86,
+  Focus: 0.91,
+  Belief: 0.91,
+  Adaptability: 0.93,
+  Arranger: 1.42,
+  Context: 1.42,
+  Individualization: 1.18,
+  Learner: 1.14,
+  Consistency: 1.18,
+  Maximizer: 1.16,
+  Restorative: 1.16,
+  Competition: 1.1,
+  Connectedness: 1.12,
+};
+
+function clamp(value, min, max) {
+  return Math.min(max, Math.max(min, value));
+}
 
 function normalizeText(text) {
   return String(text).replace(/[；;，。,、：:\s]/g, "");
@@ -112,43 +141,197 @@ function scoreThemeAgainstText(text, pairs) {
   }, 0);
 }
 
-function inferSignals(text) {
+function inferCandidateScores(text) {
   const rawScores = themeDefinitions
     .map((theme) => ({
       theme: theme.key,
-      score: scoreThemeAgainstText(text, themeKeywords[theme.key] || []),
+      score: scoreThemeAgainstText(text, themeKeywords[theme.key] || []) * (themeAdjustment[theme.key] || 1),
     }))
     .filter((item) => item.score > 0);
 
-  let signals = rawScores;
+  return rawScores.sort((a, b) => b.score - a.score).slice(0, 6);
+}
 
-  if (signals.length === 0) {
-    signals = [
-      { theme: "Intellection", score: 1 },
-      { theme: "Relator", score: 1 },
-    ];
+function applySemanticThreshold(candidates) {
+  if (candidates.length === 0) {
+    return [];
   }
 
-  const topSignals = signals.sort((a, b) => b.score - a.score).slice(0, 4);
-  const total = topSignals.reduce((sum, item) => sum + item.score, 0) || 1;
+  const maxScore = candidates[0].score;
+  const threshold = Math.max(maxScore * 0.42, 0.9);
+  const filtered = candidates.filter((item) => item.score >= threshold);
 
-  return topSignals.map((item) => ({
+  return filtered.length > 0 ? filtered : candidates.slice(0, 1);
+}
+
+function createEmptyThemeCounter() {
+  return Object.fromEntries(themeDefinitions.map((theme) => [theme.key, 0]));
+}
+
+function createEmptySideCounter() {
+  return Object.fromEntries(themeDefinitions.map((theme) => [theme.key, { left: 0, right: 0 }]));
+}
+
+function pickLeastUsedThemes(themeCounter, sideCounter, side, limit = 2) {
+  return themeDefinitions
+    .map((theme) => ({
+      theme: theme.key,
+      score:
+        (1 / (1 + themeCounter[theme.key])) *
+        (1 / (1 + sideCounter[theme.key][side] * 0.25)),
+    }))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, limit);
+}
+
+function rebalanceCandidates(candidates, themeCounter, sideCounter, side) {
+  const thresholdedCandidates = applySemanticThreshold(candidates);
+  const source =
+    thresholdedCandidates.length > 0 ? thresholdedCandidates : pickLeastUsedThemes(themeCounter, sideCounter, side, 2);
+  const adjusted = source
+    .map((item) => ({
+      theme: item.theme,
+      rawScore: item.score,
+      countPenalty: 1 + themeCounter[item.theme] * 0.11,
+      sidePenalty: 1 + sideCounter[item.theme][side] * 0.06,
+      adjustedScore: item.score / ((1 + themeCounter[item.theme] * 0.11) * (1 + sideCounter[item.theme][side] * 0.06)),
+    }))
+    .sort((a, b) => b.adjustedScore - a.adjustedScore);
+
+  const selected = adjusted;
+  const total = selected.reduce((sum, item) => sum + item.adjustedScore, 0) || 1;
+
+  return selected.map((item) => ({
     theme: item.theme,
-    weight: Number((item.score / total).toFixed(4)),
+    weight: Number((item.adjustedScore / total).toFixed(4)),
+  }));
+}
+
+function registerSignals(signals, themeCounter, sideCounter, side) {
+  signals.forEach((signal) => {
+    themeCounter[signal.theme] += 1;
+    sideCounter[signal.theme][side] += 1;
+  });
+}
+
+function computeBindingStats(questions) {
+  const stats = Object.fromEntries(
+    themeDefinitions.map((theme) => [
+      theme.key,
+      {
+        theme: theme.key,
+        displayName: theme.displayName,
+        domain: theme.domain,
+        leftCount: 0,
+        rightCount: 0,
+        totalCount: 0,
+        totalWeight: 0,
+      },
+    ]),
+  );
+
+  questions.forEach((question) => {
+    (question.leftSignals || []).forEach((signal) => {
+      const bucket = stats[signal.theme];
+      bucket.leftCount += 1;
+      bucket.totalCount += 1;
+      bucket.totalWeight += signal.weight;
+    });
+
+    (question.rightSignals || []).forEach((signal) => {
+      const bucket = stats[signal.theme];
+      bucket.rightCount += 1;
+      bucket.totalCount += 1;
+      bucket.totalWeight += signal.weight;
+    });
+  });
+
+  return Object.values(stats)
+    .map((item) => ({
+      ...item,
+      totalWeight: Number(item.totalWeight.toFixed(2)),
+    }))
+    .sort((a, b) => {
+      if (b.totalCount !== a.totalCount) {
+        return b.totalCount - a.totalCount;
+      }
+      return b.totalWeight - a.totalWeight;
+    });
+}
+
+function buildThemeCalibrationMap(stats) {
+  const avgCount = stats.reduce((sum, item) => sum + item.totalCount, 0) / stats.length || 1;
+  const avgWeight = stats.reduce((sum, item) => sum + item.totalWeight, 0) / stats.length || 1;
+
+  return Object.fromEntries(
+    stats.map((item) => {
+      const countFactor = Math.pow(avgCount / Math.max(item.totalCount, 1), 0.7);
+      const weightFactor = Math.pow(avgWeight / Math.max(item.totalWeight, 0.1), 0.92);
+      const baseFactor = countFactor * 0.35 + weightFactor * 0.65;
+      return [item.theme, clamp(baseFactor * (themeCalibrationBias[item.theme] || 1), 0.5, 1.72)];
+    }),
+  );
+}
+
+function calibrateSignals(signals, calibrationMap) {
+  if (!Array.isArray(signals) || signals.length === 0) {
+    return [];
+  }
+
+  const adjustedSignals = signals.map((signal) => ({
+    theme: signal.theme,
+    weight: signal.weight * (calibrationMap[signal.theme] || 1),
+  }));
+  const total = adjustedSignals.reduce((sum, signal) => sum + signal.weight, 0) || 1;
+  const normalizationDivisor = 1 + (total - 1) * 0.35;
+
+  return adjustedSignals.map((signal) => ({
+    theme: signal.theme,
+    weight: Number((signal.weight / normalizationDivisor).toFixed(4)),
   }));
 }
 
 function enrichQuestions(questions) {
-  return questions.map((question) => ({
+  const themeCounter = createEmptyThemeCounter();
+  const sideCounter = createEmptySideCounter();
+  const rawEnrichedQuestions = questions.map((question) => {
+    const leftSignals =
+      Array.isArray(question.leftSignals) && question.leftSignals.length > 0
+        ? question.leftSignals
+        : rebalanceCandidates(inferCandidateScores(question.leftText), themeCounter, sideCounter, "left");
+    const rightSignals =
+      Array.isArray(question.rightSignals) && question.rightSignals.length > 0
+        ? question.rightSignals
+        : rebalanceCandidates(inferCandidateScores(question.rightText), themeCounter, sideCounter, "right");
+
+    registerSignals(leftSignals, themeCounter, sideCounter, "left");
+    registerSignals(rightSignals, themeCounter, sideCounter, "right");
+
+    return {
+      ...question,
+      leftSignals,
+      rightSignals,
+    };
+  });
+
+  const rawStats = computeBindingStats(rawEnrichedQuestions);
+  const calibrationMap = buildThemeCalibrationMap(rawStats);
+  const calibratedQuestions = rawEnrichedQuestions.map((question) => ({
     ...question,
-    leftSignals: inferSignals(question.leftText),
-    rightSignals: inferSignals(question.rightText),
+    leftSignals: calibrateSignals(question.leftSignals, calibrationMap),
+    rightSignals: calibrateSignals(question.rightSignals, calibrationMap),
   }));
+
+  window.__STRENGTHS_FINDER_BINDING_STATS_RAW__ = rawStats;
+  window.__STRENGTHS_FINDER_BINDING_STATS__ = computeBindingStats(calibratedQuestions);
+  window.__STRENGTHS_FINDER_THEME_CALIBRATION__ = calibrationMap;
+  return calibratedQuestions;
 }
 
 window.__STRENGTHS_FINDER_MODEL__ = {
   domainDefinitions,
   themeDefinitions,
   themeLookup,
+  computeBindingStats,
   enrichQuestions,
 };

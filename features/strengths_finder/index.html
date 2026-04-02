@@ -18,27 +18,25 @@
       <a class="back-link" href="../../index.html">返回目录</a>
 
       <main class="strengths-layout">
-        <section class="panel intro-panel">
-          <div class="section-heading">
-            <div>
-              <p class="section-kicker">Feature / Strengths Finder</p>
-              <h1>Strengths Finder</h1>
-            </div>
-            <div class="intro-badges">
-              <span class="intro-badge">180 Questions</span>
-              <span class="intro-badge" id="progressBadge">0 / 180</span>
-            </div>
-          </div>
-          <p class="section-description">180 题题库已接入。当前会把每道题的左右描述映射为多个主题信号，最后生成 34 个维度的排序结果。</p>
-        </section>
-
         <section id="quizPanel" class="panel quiz-panel">
           <div class="section-heading">
             <div>
               <p class="section-kicker">Question</p>
               <h2 id="questionTitle">第 1 题</h2>
             </div>
-            <button id="finishEarlyBtn" class="ghost-btn" type="button">结束答题（测试）</button>
+            <div class="quiz-actions">
+              <div class="intro-badges">
+                <span class="intro-badge">180 Questions</span>
+                <span class="intro-badge" id="progressBadge">0 / 180</span>
+              </div>
+              <div class="debug-controls">
+                <button id="debugToggleBtn" class="debug-toggle-btn" type="button" aria-expanded="false">Debug</button>
+                <div id="debugMenu" class="debug-menu hidden">
+                  <button id="finishEarlyBtn" class="debug-menu-btn" type="button">结束答题（测试）</button>
+                  <button id="viewBindingStatsBtn" class="debug-menu-btn" type="button">查看主题绑定统计</button>
+                </div>
+              </div>
+            </div>
           </div>
 
           <div class="progress-track" aria-hidden="true">
@@ -48,15 +46,17 @@
           <div class="question-card">
             <div class="prompt-grid">
               <article class="prompt-block left">
-                <span class="prompt-label">左侧描述</span>
                 <p id="leftPrompt" class="prompt-copy"></p>
               </article>
               <article class="prompt-block right">
-                <span class="prompt-label">右侧描述</span>
                 <p id="rightPrompt" class="prompt-copy"></p>
               </article>
             </div>
 
+            <div class="scale-guide" aria-hidden="true">
+              <span>更接近左侧描述</span>
+              <span>更接近右侧描述</span>
+            </div>
             <div id="optionsList" class="options-list" role="radiogroup" aria-label="答题选项"></div>
           </div>
         </section>
@@ -95,6 +95,17 @@
             <button id="restartBtn" class="primary-btn" type="button">重新开始</button>
           </div>
         </section>
+
+        <section id="bindingStatsSection" class="panel binding-stats-section hidden">
+          <div class="binding-stats-head">
+            <h3>主题绑定统计</h3>
+            <div class="binding-stats-actions">
+              <span class="binding-stats-note">这里显示的是当前生效的校准后分布，语义绑定保留不变，只对全局曝光量做了温和校准。</span>
+              <button id="closeBindingStatsBtn" class="ghost-btn" type="button">关闭</button>
+            </div>
+          </div>
+          <div id="bindingStatsPanel" class="binding-stats-panel"></div>
+        </section>
       </main>
     </div>
 
@@ -110,12 +121,18 @@
         const progressBadge = document.querySelector("#progressBadge");
         const progressFill = document.querySelector("#progressFill");
         const finishEarlyBtn = document.querySelector("#finishEarlyBtn");
+        const viewBindingStatsBtn = document.querySelector("#viewBindingStatsBtn");
+        const closeBindingStatsBtn = document.querySelector("#closeBindingStatsBtn");
+        const debugToggleBtn = document.querySelector("#debugToggleBtn");
+        const debugMenu = document.querySelector("#debugMenu");
         const quizPanel = document.querySelector("#quizPanel");
         const resultPanel = document.querySelector("#resultPanel");
         const restartBtn = document.querySelector("#restartBtn");
         const domainBoards = document.querySelector("#domainBoards");
         const domainDistributionBar = document.querySelector("#domainDistributionBar");
         const domainDistributionLegend = document.querySelector("#domainDistributionLegend");
+        const bindingStatsSection = document.querySelector("#bindingStatsSection");
+        const bindingStatsPanel = document.querySelector("#bindingStatsPanel");
         const fixedOrderBtn = document.querySelector("#fixedOrderBtn");
         const rankOrderBtn = document.querySelector("#rankOrderBtn");
 
@@ -144,13 +161,12 @@
         }
 
         const optionDefinitions = [
-          { value: -2, label: "左侧的描述完全符合自己" },
-          { value: -1, label: "左侧的描述更符合自己" },
+          { value: -2, label: "强烈同意" },
+          { value: -1, label: "同意" },
           { value: 0, label: "中性" },
-          { value: 1, label: "右侧的描述更符合自己" },
-          { value: 2, label: "右侧的描述完全符合自己" },
+          { value: 1, label: "同意" },
+          { value: 2, label: "强烈同意" },
         ];
-        const introPanel = document.querySelector(".intro-panel");
 
         let currentIndex = 0;
         let autoFilledCount = 0;
@@ -209,9 +225,8 @@
           optionsList.innerHTML = optionDefinitions
             .map(
               (option) => `
-                <button class="option-button" type="button" data-value="${option.value}">
-                  <span class="option-score">${option.value === 0 ? "·" : option.value < 0 ? `L${Math.abs(option.value)}` : `R${option.value}`}</span>
-                  <span>${option.label}</span>
+                <button class="option-button option-${String(option.value).replace("-", "n")}" type="button" data-value="${option.value}">
+                  <span class="option-copy">${option.label}</span>
                 </button>
               `,
             )
@@ -369,6 +384,63 @@
             .join("");
         }
 
+        function renderBindingStatsPanel() {
+          if (!bindingStatsPanel) {
+            return;
+          }
+
+          const stats = Array.isArray(window.__STRENGTHS_FINDER_BINDING_STATS__) ? window.__STRENGTHS_FINDER_BINDING_STATS__ : [];
+          if (stats.length === 0) {
+            bindingStatsPanel.innerHTML = '<p class="muted">当前还没有可显示的绑定统计。</p>';
+            return;
+          }
+
+          bindingStatsPanel.innerHTML = `
+            <div class="binding-stats-table">
+              <div class="binding-stats-row binding-stats-header">
+                <span>主题</span>
+                <span>领域</span>
+                <span>总绑定</span>
+                <span>左侧</span>
+                <span>右侧</span>
+                <span>总权重</span>
+              </div>
+              ${stats
+                .map((item) => {
+                  const domain = fallbackDomainDefinitions[item.domain] || { label: item.domain };
+                  return `
+                    <div class="binding-stats-row">
+                      <span>${item.displayName}</span>
+                      <span>${domain.label}</span>
+                      <span>${item.totalCount}</span>
+                      <span>${item.leftCount}</span>
+                      <span>${item.rightCount}</span>
+                      <span>${item.totalWeight}</span>
+                    </div>
+                  `;
+                })
+                .join("")}
+            </div>
+          `;
+        }
+
+        function setDebugMenu(open) {
+          if (!debugMenu || !debugToggleBtn) {
+            return;
+          }
+
+          debugMenu.classList.toggle("hidden", !open);
+          debugToggleBtn.setAttribute("aria-expanded", open ? "true" : "false");
+        }
+
+        function openBindingStats() {
+          renderBindingStatsPanel();
+          if (bindingStatsSection) {
+            bindingStatsSection.classList.remove("hidden");
+          }
+          setDebugMenu(false);
+        }
+
         function showResults() {
           const ranking = calculateThemeRanking();
           if (ranking.length > 0) {
@@ -377,9 +449,7 @@
           } else if (domainBoards) {
             domainBoards.innerHTML = '<p class="muted">当前为兜底调试模式，题目流程已恢复；评分矩阵会在主题模型可用时正常显示。</p>';
           }
-          if (introPanel) {
-            introPanel.classList.add("hidden");
-          }
+          renderBindingStatsPanel();
           if (quizPanel) {
             quizPanel.classList.add("hidden");
           }
@@ -416,7 +486,7 @@
         });
 
         if (finishEarlyBtn) {
-            finishEarlyBtn.addEventListener("click", () => {
+          finishEarlyBtn.addEventListener("click", () => {
               answers = answers.map((answer) => {
               if (answer !== null) {
                 return answer;
@@ -429,6 +499,27 @@
           });
         }
 
+        if (debugToggleBtn) {
+          debugToggleBtn.addEventListener("click", () => {
+            const isHidden = !debugMenu || debugMenu.classList.contains("hidden");
+            setDebugMenu(isHidden);
+          });
+        }
+
+        if (viewBindingStatsBtn) {
+          viewBindingStatsBtn.addEventListener("click", () => {
+            openBindingStats();
+          });
+        }
+
+        if (closeBindingStatsBtn) {
+          closeBindingStatsBtn.addEventListener("click", () => {
+            if (bindingStatsSection) {
+              bindingStatsSection.classList.add("hidden");
+            }
+          });
+        }
+
         if (restartBtn) {
           restartBtn.addEventListener("click", () => {
             answers = fallbackQuestions.map(() => null);
@@ -438,9 +529,6 @@
                 : fallbackQuestions;
             currentIndex = 0;
             autoFilledCount = 0;
-            if (introPanel) {
-              introPanel.classList.remove("hidden");
-            }
             if (resultPanel) {
               resultPanel.classList.add("hidden");
             }
