@@ -409,28 +409,38 @@ function normalizeDateParts(year, month, day) {
 }
 
 function extractDatesFromLine(line) {
-  const dates = [];
+  const dates = extractDateMatchesFromLine(line).map((match) => match.date);
+  return Array.from(new Set(dates)).sort();
+}
+
+function extractDateMatchesFromLine(line) {
+  const matches = [];
   const seen = new Set();
   const patterns = [
-    /\b(2026)[\/.-](\d{1,2})[\/.-](\d{1,2})\b/g,
-    /\b(\d{1,2})[\/.-](\d{1,2})[\/.-](2026)\b/g,
+    { regex: /\b(2026)[\/.-](\d{1,2})[\/.-](\d{1,2})\b/g, order: "ymd" },
+    { regex: /\b(\d{1,2})[\/.-](\d{1,2})[\/.-](2026)\b/g, order: "mdy" },
+    { regex: /(2026)\s*年\s*(\d{1,2})\s*月\s*(\d{1,2})\s*日/g, order: "ymd" },
   ];
 
-  patterns.forEach((pattern, index) => {
+  patterns.forEach(({ regex, order }) => {
     let match;
-    while ((match = pattern.exec(line))) {
+    while ((match = regex.exec(line))) {
       const normalized =
-        index === 0
+        order === "ymd"
           ? normalizeDateParts(match[1], match[2], match[3])
           : normalizeDateParts(match[3], match[1], match[2]);
       if (normalized && !seen.has(normalized)) {
         seen.add(normalized);
-        dates.push(normalized);
+        matches.push({
+          date: normalized,
+          index: match.index,
+          length: match[0].length,
+        });
       }
     }
   });
 
-  return dates.sort();
+  return matches.sort((a, b) => a.index - b.index);
 }
 
 function recalculateSegments() {
@@ -549,6 +559,17 @@ function detectEventType(line, type) {
   return null;
 }
 
+function inferEventTypeForDate(line, type, matchIndex, matchLength) {
+  const start = Math.max(0, matchIndex - 16);
+  const end = Math.min(line.length, matchIndex + matchLength + 16);
+  const nearby = line.slice(start, end);
+  const exact = detectEventType(nearby, type);
+  if (exact) {
+    return exact;
+  }
+  return detectEventType(line, type);
+}
+
 function extractEventsFromText(text, type, fileName) {
   const country = type === "us" ? "US" : "CN";
   return text
@@ -556,19 +577,25 @@ function extractEventsFromText(text, type, fileName) {
     .map((line) => line.trim())
     .filter(Boolean)
     .flatMap((line, index) => {
-      const eventType = detectEventType(line, type);
-      const dates = extractDatesFromLine(line);
-      if (!eventType || dates.length === 0) {
+      const dateMatches = extractDateMatchesFromLine(line);
+      if (dateMatches.length === 0) {
         return [];
       }
 
-      return dates.map((date, dateIndex) => ({
-        id: `${country}-${fileName}-${index}-${dateIndex}-${eventType}`,
-        country,
-        type: eventType,
-        date,
-        evidence: normalizeEvidence(line),
-      }));
+      return dateMatches.flatMap((match, dateIndex) => {
+        const eventType = inferEventTypeForDate(line, type, match.index, match.length);
+        if (!eventType) {
+          return [];
+        }
+
+        return [{
+          id: `${country}-${fileName}-${index}-${dateIndex}-${eventType}`,
+          country,
+          type: eventType,
+          date: match.date,
+          evidence: normalizeEvidence(line),
+        }];
+      });
     })
     .filter((event) => event.date.startsWith(String(CALENDAR_YEAR)));
 }
