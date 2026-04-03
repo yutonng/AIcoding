@@ -32,8 +32,6 @@ const leftPrompt = document.querySelector("#leftPrompt");
 const rightPrompt = document.querySelector("#rightPrompt");
 const optionsList = document.querySelector("#optionsList");
 const finishEarlyBtn = document.querySelector("#finishEarlyBtn");
-const viewBindingStatsBtn = document.querySelector("#viewBindingStatsBtn");
-const closeBindingStatsBtn = document.querySelector("#closeBindingStatsBtn");
 const debugToggleBtn = document.querySelector("#debugToggleBtn");
 const debugMenu = document.querySelector("#debugMenu");
 const quizPanel = document.querySelector("#quizPanel");
@@ -42,11 +40,10 @@ const progressFill = document.querySelector("#progressFill");
 const domainBoards = document.querySelector("#domainBoards");
 const domainDistributionBar = document.querySelector("#domainDistributionBar");
 const domainDistributionLegend = document.querySelector("#domainDistributionLegend");
-const bindingStatsSection = document.querySelector("#bindingStatsSection");
-const bindingStatsPanel = document.querySelector("#bindingStatsPanel");
 const fixedOrderBtn = document.querySelector("#fixedOrderBtn");
 const rankOrderBtn = document.querySelector("#rankOrderBtn");
 const restartBtn = document.querySelector("#restartBtn");
+const topFiveList = document.querySelector("#topFiveList");
 
 const domainThemeOrder = {
   Executing: ["Achiever", "Arranger", "Belief", "Deliberative", "Discipline", "Consistency", "Focus", "Responsibility", "Restorative"],
@@ -250,21 +247,125 @@ function renderDomainDistribution(ranking) {
     .join("");
 }
 
+function renderTopFive(ranking) {
+  if (!topFiveList) {
+    return;
+  }
+
+  const topThemes = ranking.slice(0, 5);
+  topFiveList.innerHTML = topThemes
+    .map((theme) => {
+      const domain = domainDefinitions[theme.domain] || { accent: "#1f1d1a", label: theme.domain };
+      return `
+        <article class="top-five-card" style="--accent:${domain.accent};">
+          <span class="top-five-rank">#${theme.rank}</span>
+          <strong class="top-five-name">${theme.displayName}</strong>
+          <span class="top-five-domain">${domain.label}</span>
+        </article>
+      `;
+    })
+    .join("");
+}
+
 function renderDomainBoards(ranking) {
   if (!domainBoards) {
     return;
   }
 
+  if (matrixDisplayMode === "rank") {
+    const maxScore = ranking[0]?.score || 1;
+    const tickCount = 5;
+    const ticks = Array.from({ length: tickCount + 1 }, (_, index) => {
+      const value = Number(((maxScore / tickCount) * (tickCount - index)).toFixed(1));
+      return {
+        value,
+        ratio: (index / tickCount) * 100,
+      };
+    });
+    const domainOrder = ["Executing", "Influencing", "RelationshipBuilding", "StrategicThinking"];
+    domainBoards.className = "domain-boards rank-chart";
+    domainBoards.innerHTML = `
+      <section class="rank-chart-panel">
+        <div class="rank-chart-legend">
+          ${domainOrder
+            .map((domainKey) => {
+              const domain = domainDefinitions[domainKey] || { accent: "#1f1d1a", label: domainKey };
+              return `
+                <span class="rank-chart-legend-item">
+                  <i class="rank-chart-legend-dot" style="--accent:${domain.accent};"></i>
+                  <span>${domain.label}</span>
+                </span>
+              `;
+            })
+            .join("")}
+        </div>
+        <div class="rank-chart-frame">
+          <div class="rank-chart-yaxis">
+            ${ticks
+              .map(
+                (tick) => `
+                  <span class="rank-chart-yaxis-label">${tick.value}</span>
+                `,
+              )
+              .join("")}
+          </div>
+          <div class="rank-chart-plot">
+            <div class="rank-chart-grid">
+              ${ticks
+                .map(
+                  (tick) => `
+                    <span class="rank-chart-grid-line" style="top:${tick.ratio}%"></span>
+                  `,
+                )
+                .join("")}
+            </div>
+            <div class="rank-chart-groups">
+              ${domainOrder
+                .map((domainKey) => {
+                  const domain = domainDefinitions[domainKey] || { accent: "#1f1d1a", label: domainKey };
+                  const themes = ranking.filter((theme) => theme.domain === domainKey);
+                  return `
+                    <section class="rank-chart-group" style="--accent:${domain.accent}; --group-size:${themes.length};">
+                      <div class="rank-chart-columns rank-chart-columns-${domainKey}">
+                        ${themes
+                          .map((theme) => {
+                            const height = `${Math.max((theme.score / maxScore) * 100, 8).toFixed(2)}%`;
+                            return `
+                              <article class="rank-column" title="${theme.displayName} · ${domain.label} · ${theme.score}">
+                                <div class="rank-column-value">${theme.score}</div>
+                                <div class="rank-column-track">
+                                  <div class="rank-column-fill" style="height:${height};"></div>
+                                </div>
+                                <div class="rank-column-meta">
+                                  <span class="rank-column-rank">${theme.rank}</span>
+                                  <strong class="rank-column-name">${theme.displayName}</strong>
+                                </div>
+                              </article>
+                            `;
+                          })
+                          .join("")}
+                      </div>
+                      <div class="rank-chart-group-label">${domain.label}</div>
+                    </section>
+                  `;
+                })
+                .join("")}
+            </div>
+          </div>
+        </div>
+      </section>
+    `;
+    return;
+  }
+
   const domainOrder = ["Executing", "Influencing", "RelationshipBuilding", "StrategicThinking"];
   const rankingMap = Object.fromEntries(ranking.map((theme) => [theme.key, theme]));
+  domainBoards.className = "domain-boards report-style";
 
   domainBoards.innerHTML = domainOrder
     .map((domainKey) => {
       const domain = domainDefinitions[domainKey] || { accent: "#1f1d1a", soft: "#f3efe7", label: domainKey };
-      const themes =
-        matrixDisplayMode === "rank"
-          ? ranking.filter((theme) => theme.domain === domainKey)
-          : (domainThemeOrder[domainKey] || []).map((themeKey) => rankingMap[themeKey]).filter(Boolean);
+      const themes = (domainThemeOrder[domainKey] || []).map((themeKey) => rankingMap[themeKey]).filter(Boolean);
       const cards = themes
         .map(
           (theme) => `
@@ -290,46 +391,6 @@ function renderDomainBoards(ranking) {
     .join("");
 }
 
-function renderBindingStatsPanel() {
-  if (!bindingStatsPanel) {
-    return;
-  }
-
-  const stats = Array.isArray(window.__STRENGTHS_FINDER_BINDING_STATS__) ? window.__STRENGTHS_FINDER_BINDING_STATS__ : [];
-  if (stats.length === 0) {
-    bindingStatsPanel.innerHTML = '<p class="muted">当前还没有可显示的绑定统计。</p>';
-    return;
-  }
-
-  bindingStatsPanel.innerHTML = `
-    <div class="binding-stats-table">
-      <div class="binding-stats-row binding-stats-header">
-        <span>主题</span>
-        <span>领域</span>
-        <span>总绑定</span>
-        <span>左侧</span>
-        <span>右侧</span>
-        <span>总权重</span>
-      </div>
-      ${stats
-        .map((item) => {
-          const domain = domainDefinitions[item.domain] || { label: item.domain };
-          return `
-            <div class="binding-stats-row">
-              <span>${item.displayName}</span>
-              <span>${domain.label}</span>
-              <span>${item.totalCount}</span>
-              <span>${item.leftCount}</span>
-              <span>${item.rightCount}</span>
-              <span>${item.totalWeight}</span>
-            </div>
-          `;
-        })
-        .join("")}
-    </div>
-  `;
-}
-
 function setDebugMenu(open) {
   if (!debugMenu || !debugToggleBtn) {
     return;
@@ -339,22 +400,14 @@ function setDebugMenu(open) {
   debugToggleBtn.setAttribute("aria-expanded", open ? "true" : "false");
 }
 
-function openBindingStats() {
-  renderBindingStatsPanel();
-  if (bindingStatsSection) {
-    bindingStatsSection.classList.remove("hidden");
-  }
-  setDebugMenu(false);
-}
-
 function showResults() {
   const ranking = calculateThemeRanking();
 
   if (ranking.length > 0) {
     renderDomainDistribution(ranking);
+    renderTopFive(ranking);
     renderDomainBoards(ranking);
   }
-  renderBindingStatsPanel();
 
   if (quizPanel) {
     quizPanel.classList.add("hidden");
@@ -434,20 +487,6 @@ if (debugToggleBtn) {
   debugToggleBtn.addEventListener("click", () => {
     const isHidden = !debugMenu || debugMenu.classList.contains("hidden");
     setDebugMenu(isHidden);
-  });
-}
-
-if (viewBindingStatsBtn) {
-  viewBindingStatsBtn.addEventListener("click", () => {
-    openBindingStats();
-  });
-}
-
-if (closeBindingStatsBtn) {
-  closeBindingStatsBtn.addEventListener("click", () => {
-    if (bindingStatsSection) {
-      bindingStatsSection.classList.add("hidden");
-    }
   });
 }
 

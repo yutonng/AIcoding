@@ -26,14 +26,12 @@
             </div>
             <div class="quiz-actions">
               <div class="intro-badges">
-                <span class="intro-badge">180 Questions</span>
                 <span class="intro-badge" id="progressBadge">0 / 180</span>
               </div>
               <div class="debug-controls">
                 <button id="debugToggleBtn" class="debug-toggle-btn" type="button" aria-expanded="false">Debug</button>
                 <div id="debugMenu" class="debug-menu hidden">
-                  <button id="finishEarlyBtn" class="debug-menu-btn" type="button">结束答题（测试）</button>
-                  <button id="viewBindingStatsBtn" class="debug-menu-btn" type="button">查看主题绑定统计</button>
+                  <button id="finishEarlyBtn" class="debug-menu-btn" type="button">结束答题并随机填充</button>
                 </div>
               </div>
             </div>
@@ -65,19 +63,23 @@
           <div class="section-heading">
             <div>
               <p class="section-kicker">Result</p>
-              <h2>答题结果</h2>
+            </div>
+            <div class="result-head-actions">
+              <button id="restartBtn" class="primary-btn" type="button">重新测试</button>
             </div>
           </div>
 
           <section class="distribution-section">
+            <h3 class="distribution-section-title">四大维度的相对分布</h3>
             <div id="domainDistributionBar" class="domain-distribution-bar"></div>
             <div id="domainDistributionLegend" class="domain-distribution-legend"></div>
           </section>
 
-          <section class="result-copy">
-            <p>这张图展示了 34 个才干主题在四大领域中的相对分布。</p>
-            <p>你可以先从领域分布看出自己更偏向哪类优势，再结合下方矩阵查看各主题在整体中的排序位置。</p>
-            <p>下方每张卡片中的数字表示该主题在全部 34 个维度中的排名。</p>
+          <section class="top-five-section">
+            <div class="top-five-head">
+              <h3 class="top-five-title">Top 5 主题</h3>
+            </div>
+            <div id="topFiveList" class="top-five-list"></div>
           </section>
 
           <section class="matrix-section">
@@ -90,21 +92,6 @@
             </div>
             <div id="domainBoards" class="domain-boards report-style"></div>
           </section>
-
-          <div class="result-actions">
-            <button id="restartBtn" class="primary-btn" type="button">重新开始</button>
-          </div>
-        </section>
-
-        <section id="bindingStatsSection" class="panel binding-stats-section hidden">
-          <div class="binding-stats-head">
-            <h3>主题绑定统计</h3>
-            <div class="binding-stats-actions">
-              <span class="binding-stats-note">这里显示的是当前生效的校准后分布，语义绑定保留不变，只对全局曝光量做了温和校准。</span>
-              <button id="closeBindingStatsBtn" class="ghost-btn" type="button">关闭</button>
-            </div>
-          </div>
-          <div id="bindingStatsPanel" class="binding-stats-panel"></div>
         </section>
       </main>
     </div>
@@ -121,8 +108,6 @@
         const progressBadge = document.querySelector("#progressBadge");
         const progressFill = document.querySelector("#progressFill");
         const finishEarlyBtn = document.querySelector("#finishEarlyBtn");
-        const viewBindingStatsBtn = document.querySelector("#viewBindingStatsBtn");
-        const closeBindingStatsBtn = document.querySelector("#closeBindingStatsBtn");
         const debugToggleBtn = document.querySelector("#debugToggleBtn");
         const debugMenu = document.querySelector("#debugMenu");
         const quizPanel = document.querySelector("#quizPanel");
@@ -131,8 +116,7 @@
         const domainBoards = document.querySelector("#domainBoards");
         const domainDistributionBar = document.querySelector("#domainDistributionBar");
         const domainDistributionLegend = document.querySelector("#domainDistributionLegend");
-        const bindingStatsSection = document.querySelector("#bindingStatsSection");
-        const bindingStatsPanel = document.querySelector("#bindingStatsPanel");
+        const topFiveList = document.querySelector("#topFiveList");
         const fixedOrderBtn = document.querySelector("#fixedOrderBtn");
         const rankOrderBtn = document.querySelector("#rankOrderBtn");
 
@@ -340,13 +324,120 @@
             .join("");
         }
 
+        function renderTopFive(ranking) {
+          if (!topFiveList) {
+            return;
+          }
+
+          const topThemes = ranking.slice(0, 5);
+          topFiveList.innerHTML = topThemes
+            .map((theme) => {
+              const domain = fallbackDomainDefinitions[theme.domain] || { accent: "#1f1d1a", label: theme.domain };
+              return `
+                <article class="top-five-card" style="--accent:${domain.accent};">
+                  <span class="top-five-rank">#${theme.rank}</span>
+                  <strong class="top-five-name">${theme.displayName}</strong>
+                  <span class="top-five-domain">${domain.label}</span>
+                </article>
+              `;
+            })
+            .join("");
+        }
+
         function renderDomainBoards(ranking) {
           if (!domainBoards) {
             return;
           }
 
+          if (matrixDisplayMode === "rank") {
+            const maxScore = ranking[0]?.score || 1;
+            const tickCount = 5;
+            const ticks = Array.from({ length: tickCount + 1 }, (_, index) => {
+              const value = Number(((maxScore / tickCount) * (tickCount - index)).toFixed(1));
+              return {
+                value,
+                ratio: (index / tickCount) * 100,
+              };
+            });
+            const domainOrder = ["Executing", "Influencing", "RelationshipBuilding", "StrategicThinking"];
+            domainBoards.className = "domain-boards rank-chart";
+            domainBoards.innerHTML = `
+              <section class="rank-chart-panel">
+                <div class="rank-chart-legend">
+                  ${domainOrder
+                    .map((domainKey) => {
+                      const domain = fallbackDomainDefinitions[domainKey] || { accent: "#1f1d1a", label: domainKey };
+                      return `
+                        <span class="rank-chart-legend-item">
+                          <i class="rank-chart-legend-dot" style="--accent:${domain.accent};"></i>
+                          <span>${domain.label}</span>
+                        </span>
+                      `;
+                    })
+                    .join("")}
+                </div>
+                <div class="rank-chart-frame">
+                  <div class="rank-chart-yaxis">
+                    ${ticks
+                      .map(
+                        (tick) => `
+                          <span class="rank-chart-yaxis-label">${tick.value}</span>
+                        `,
+                      )
+                      .join("")}
+                  </div>
+                  <div class="rank-chart-plot">
+                    <div class="rank-chart-grid">
+                      ${ticks
+                        .map(
+                          (tick) => `
+                            <span class="rank-chart-grid-line" style="top:${tick.ratio}%"></span>
+                          `,
+                        )
+                        .join("")}
+                    </div>
+                    <div class="rank-chart-groups">
+                      ${domainOrder
+                        .map((domainKey) => {
+                          const domain = fallbackDomainDefinitions[domainKey] || { accent: "#1f1d1a", label: domainKey };
+                          const themes = ranking.filter((theme) => theme.domain === domainKey);
+                          return `
+                            <section class="rank-chart-group" style="--accent:${domain.accent}; --group-size:${themes.length};">
+                              <div class="rank-chart-columns rank-chart-columns-${domainKey}">
+                                ${themes
+                                  .map((theme) => {
+                                    const height = `${Math.max((theme.score / maxScore) * 100, 8).toFixed(2)}%`;
+                                    return `
+                                      <article class="rank-column" title="${theme.displayName} · ${domain.label} · ${theme.score}">
+                                        <div class="rank-column-value">${theme.score}</div>
+                                        <div class="rank-column-track">
+                                          <div class="rank-column-fill" style="height:${height};"></div>
+                                        </div>
+                                        <div class="rank-column-meta">
+                                          <span class="rank-column-rank">${theme.rank}</span>
+                                          <strong class="rank-column-name">${theme.displayName}</strong>
+                                        </div>
+                                      </article>
+                                    `;
+                                  })
+                                  .join("")}
+                              </div>
+                              <div class="rank-chart-group-label">${domain.label}</div>
+                            </section>
+                          `;
+                        })
+                        .join("")}
+                    </div>
+                  </div>
+                </div>
+              </section>
+            `;
+            return;
+          }
+
           const domainOrder = ["Executing", "Influencing", "RelationshipBuilding", "StrategicThinking"];
           const rankingMap = Object.fromEntries(ranking.map((theme) => [theme.key, theme]));
+          domainBoards.className = "domain-boards report-style";
 
           domainBoards.innerHTML = domainOrder
             .map((domainKey) => {
@@ -355,10 +446,7 @@
                 soft: "#f3efe7",
                 label: domainKey,
               };
-              const themes =
-                matrixDisplayMode === "rank"
-                  ? ranking.filter((theme) => theme.domain === domainKey)
-                  : (domainThemeOrder[domainKey] || []).map((themeKey) => rankingMap[themeKey]).filter(Boolean);
+              const themes = (domainThemeOrder[domainKey] || []).map((themeKey) => rankingMap[themeKey]).filter(Boolean);
               const cards = themes
                 .map(
                   (theme) => `
@@ -384,46 +472,6 @@
             .join("");
         }
 
-        function renderBindingStatsPanel() {
-          if (!bindingStatsPanel) {
-            return;
-          }
-
-          const stats = Array.isArray(window.__STRENGTHS_FINDER_BINDING_STATS__) ? window.__STRENGTHS_FINDER_BINDING_STATS__ : [];
-          if (stats.length === 0) {
-            bindingStatsPanel.innerHTML = '<p class="muted">当前还没有可显示的绑定统计。</p>';
-            return;
-          }
-
-          bindingStatsPanel.innerHTML = `
-            <div class="binding-stats-table">
-              <div class="binding-stats-row binding-stats-header">
-                <span>主题</span>
-                <span>领域</span>
-                <span>总绑定</span>
-                <span>左侧</span>
-                <span>右侧</span>
-                <span>总权重</span>
-              </div>
-              ${stats
-                .map((item) => {
-                  const domain = fallbackDomainDefinitions[item.domain] || { label: item.domain };
-                  return `
-                    <div class="binding-stats-row">
-                      <span>${item.displayName}</span>
-                      <span>${domain.label}</span>
-                      <span>${item.totalCount}</span>
-                      <span>${item.leftCount}</span>
-                      <span>${item.rightCount}</span>
-                      <span>${item.totalWeight}</span>
-                    </div>
-                  `;
-                })
-                .join("")}
-            </div>
-          `;
-        }
-
         function setDebugMenu(open) {
           if (!debugMenu || !debugToggleBtn) {
             return;
@@ -433,23 +481,15 @@
           debugToggleBtn.setAttribute("aria-expanded", open ? "true" : "false");
         }
 
-        function openBindingStats() {
-          renderBindingStatsPanel();
-          if (bindingStatsSection) {
-            bindingStatsSection.classList.remove("hidden");
-          }
-          setDebugMenu(false);
-        }
-
         function showResults() {
           const ranking = calculateThemeRanking();
           if (ranking.length > 0) {
             renderDomainDistribution(ranking);
+            renderTopFive(ranking);
             renderDomainBoards(ranking);
           } else if (domainBoards) {
             domainBoards.innerHTML = '<p class="muted">当前为兜底调试模式，题目流程已恢复；评分矩阵会在主题模型可用时正常显示。</p>';
           }
-          renderBindingStatsPanel();
           if (quizPanel) {
             quizPanel.classList.add("hidden");
           }
@@ -503,20 +543,6 @@
           debugToggleBtn.addEventListener("click", () => {
             const isHidden = !debugMenu || debugMenu.classList.contains("hidden");
             setDebugMenu(isHidden);
-          });
-        }
-
-        if (viewBindingStatsBtn) {
-          viewBindingStatsBtn.addEventListener("click", () => {
-            openBindingStats();
-          });
-        }
-
-        if (closeBindingStatsBtn) {
-          closeBindingStatsBtn.addEventListener("click", () => {
-            if (bindingStatsSection) {
-              bindingStatsSection.classList.add("hidden");
-            }
           });
         }
 

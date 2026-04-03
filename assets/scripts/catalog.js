@@ -15,6 +15,14 @@ const features = [
     href: "./features/Calendar/index.html",
     tags: ["Calendar", "Travel", "OCR"],
   },
+  {
+    slug: "strengths_finder",
+    title: "Strengths Finder",
+    description: "180 道题逐题作答，生成 34 个主题在四大维度中的排序与分布。",
+    status: "Available",
+    href: "./features/strengths_finder/index.html",
+    tags: ["Assessment", "Strengths", "Ranking"],
+  },
 ];
 
 const catalogRoot = document.querySelector("#featureCatalog");
