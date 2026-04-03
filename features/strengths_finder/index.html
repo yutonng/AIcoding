@@ -82,6 +82,13 @@
             <div id="topFiveList" class="top-five-list"></div>
           </section>
 
+          <section class="top-five-section bottom-five-section">
+            <div class="top-five-head">
+              <h3 class="top-five-title">Bottom 5 主题</h3>
+            </div>
+            <div id="bottomFiveList" class="top-five-list"></div>
+          </section>
+
           <section class="matrix-section">
             <div class="matrix-head">
               <h3 class="matrix-title">才干在四大领域的象限分析</h3>
@@ -117,6 +124,7 @@
         const domainDistributionBar = document.querySelector("#domainDistributionBar");
         const domainDistributionLegend = document.querySelector("#domainDistributionLegend");
         const topFiveList = document.querySelector("#topFiveList");
+        const bottomFiveList = document.querySelector("#bottomFiveList");
         const fixedOrderBtn = document.querySelector("#fixedOrderBtn");
         const rankOrderBtn = document.querySelector("#rankOrderBtn");
 
@@ -345,6 +353,26 @@
             .join("");
         }
 
+        function renderBottomFive(ranking) {
+          if (!bottomFiveList) {
+            return;
+          }
+
+          const bottomThemes = [...ranking].slice(-5);
+          bottomFiveList.innerHTML = bottomThemes
+            .map((theme) => {
+              const domain = fallbackDomainDefinitions[theme.domain] || { accent: "#1f1d1a", label: theme.domain };
+              return `
+                <article class="top-five-card" style="--accent:${domain.accent};">
+                  <span class="top-five-rank">#${theme.rank}</span>
+                  <strong class="top-five-name">${theme.displayName}</strong>
+                  <span class="top-five-domain">${domain.label}</span>
+                </article>
+              `;
+            })
+            .join("");
+        }
+
         function renderDomainBoards(ranking) {
           if (!domainBoards) {
             return;
@@ -487,6 +515,7 @@
           if (ranking.length > 0) {
             renderDomainDistribution(ranking);
             renderTopFive(ranking);
+            renderBottomFive(ranking);
             renderDomainBoards(ranking);
           } else if (domainBoards) {
             domainBoards.innerHTML = '<p class="muted">当前为兜底调试模式，题目流程已恢复；评分矩阵会在主题模型可用时正常显示。</p>';

@@ -44,6 +44,7 @@ const fixedOrderBtn = document.querySelector("#fixedOrderBtn");
 const rankOrderBtn = document.querySelector("#rankOrderBtn");
 const restartBtn = document.querySelector("#restartBtn");
 const topFiveList = document.querySelector("#topFiveList");
+const bottomFiveList = document.querySelector("#bottomFiveList");
 
 const domainThemeOrder = {
   Executing: ["Achiever", "Arranger", "Belief", "Deliberative", "Discipline", "Consistency", "Focus", "Responsibility", "Restorative"],
@@ -268,6 +269,26 @@ function renderTopFive(ranking) {
     .join("");
 }
 
+function renderBottomFive(ranking) {
+  if (!bottomFiveList) {
+    return;
+  }
+
+  const bottomThemes = [...ranking].slice(-5);
+  bottomFiveList.innerHTML = bottomThemes
+    .map((theme) => {
+      const domain = domainDefinitions[theme.domain] || { accent: "#1f1d1a", label: theme.domain };
+      return `
+        <article class="top-five-card" style="--accent:${domain.accent};">
+          <span class="top-five-rank">#${theme.rank}</span>
+          <strong class="top-five-name">${theme.displayName}</strong>
+          <span class="top-five-domain">${domain.label}</span>
+        </article>
+      `;
+    })
+    .join("");
+}
+
 function renderDomainBoards(ranking) {
   if (!domainBoards) {
     return;
@@ -407,6 +428,7 @@ function showResults() {
   if (ranking.length > 0) {
     renderDomainDistribution(ranking);
     renderTopFive(ranking);
+    renderBottomFive(ranking);
     renderDomainBoards(ranking);
   }
 
