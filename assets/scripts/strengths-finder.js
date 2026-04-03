@@ -56,6 +56,7 @@ let answers = [];
 let currentIndex = 0;
 let autoFilledCount = 0;
 let matrixDisplayMode = "fixed";
+const DOMAIN_DISTRIBUTION_POWER = 1.45;
 
 function randomChoice(items) {
   if (!Array.isArray(items) || items.length === 0) {
@@ -220,7 +221,7 @@ function renderDomainDistribution(ranking) {
   const totals = Object.fromEntries(domainOrder.map((key) => [key, 0]));
 
   ranking.forEach((theme) => {
-    totals[theme.domain] += theme.score;
+    totals[theme.domain] += Math.pow(theme.score, DOMAIN_DISTRIBUTION_POWER);
   });
 
   const totalScore = Object.values(totals).reduce((sum, value) => sum + value, 0) || 1;

@@ -273,6 +273,24 @@ function buildThemeCalibrationMap(stats) {
   );
 }
 
+function pruneSignalsBySemanticThreshold(signals) {
+  if (!Array.isArray(signals) || signals.length === 0) {
+    return [];
+  }
+
+  const sortedSignals = [...signals].sort((a, b) => b.weight - a.weight);
+  const maxWeight = sortedSignals[0].weight || 0;
+  const threshold = Math.max(maxWeight * 0.62, 0.28);
+  const filteredSignals = sortedSignals.filter((signal) => signal.weight >= threshold);
+  const keptSignals = filteredSignals.length > 0 ? filteredSignals : sortedSignals.slice(0, 1);
+  const total = keptSignals.reduce((sum, signal) => sum + signal.weight, 0) || 1;
+
+  return keptSignals.map((signal) => ({
+    theme: signal.theme,
+    weight: Number((signal.weight / total).toFixed(4)),
+  }));
+}
+
 function calibrateSignals(signals, calibrationMap) {
   if (!Array.isArray(signals) || signals.length === 0) {
     return [];
@@ -297,11 +315,11 @@ function enrichQuestions(questions) {
   const rawEnrichedQuestions = questions.map((question) => {
     const leftSignals =
       Array.isArray(question.leftSignals) && question.leftSignals.length > 0
-        ? question.leftSignals
+        ? pruneSignalsBySemanticThreshold(question.leftSignals)
         : rebalanceCandidates(inferCandidateScores(question.leftText), themeCounter, sideCounter, "left");
     const rightSignals =
       Array.isArray(question.rightSignals) && question.rightSignals.length > 0
-        ? question.rightSignals
+        ? pruneSignalsBySemanticThreshold(question.rightSignals)
         : rebalanceCandidates(inferCandidateScores(question.rightText), themeCounter, sideCounter, "right");
 
     registerSignals(leftSignals, themeCounter, sideCounter, "left");
