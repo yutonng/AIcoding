@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Book Digest</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../assets/styles/global.css" />
+    <link rel="stylesheet" href="../../assets/styles/book-digest.css" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <a class="back-link" href="../../index.html">返回目录</a>
+
+      <main class="digest-layout">
+        <section class="topbar-panel">
+          <div class="mode-switch" role="tablist" aria-label="页面模式">
+            <button id="readerModeBtn" class="mode-btn is-active" type="button" aria-selected="true">用户端</button>
+            <button id="adminModeBtn" class="mode-btn" type="button" aria-selected="false">管理端</button>
+          </div>
+        </section>
+
+        <section id="readerSection" class="reader-shell">
+          <section class="panel library-panel">
+            <div class="section-heading">
+              <div>
+                <p class="section-kicker">Published Library</p>
+                <h2>已发布书单</h2>
+              </div>
+            </div>
+            <div id="libraryList" class="library-list empty-state">正在加载书单...</div>
+          </section>
+
+          <section class="reader-stage">
+            <div class="phone-frame">
+              <div class="phone-glow"></div>
+              <article class="panel reader-card">
+                <div class="reader-card-head">
+                  <button id="prevSlideBtn" class="reader-nav-btn" type="button" aria-label="上一页">‹</button>
+                  <div class="reader-title-block">
+                    <h2 id="readerBookTitle">选择一本书</h2>
+                  </div>
+                  <button id="nextSlideBtn" class="reader-nav-btn" type="button" aria-label="下一页">›</button>
+                </div>
+
+                <div class="reader-progress-row">
+                  <span id="readerProgressBadge" class="reader-progress-badge">0 / 0</span>
+                  <div class="progress-track" aria-hidden="true">
+                    <div id="readerProgressFill" class="progress-fill"></div>
+                  </div>
+                </div>
+
+                <div id="readerSlide" class="reader-slide empty-state">请选择左侧的一本书开始阅读。</div>
+              </article>
+            </div>
+          </section>
+        </section>
+
+        <section id="adminSection" class="admin-shell hidden">
+          <section class="panel admin-form-panel">
+            <div class="section-heading">
+              <div>
+                <p class="section-kicker">Admin</p>
+                <h2>内容生产台</h2>
+                <p class="section-description">
+                  这版原型把草稿保存在浏览器内存与 `localStorage`，发布结果可以预览并导出为 JSON 文件内容。
+                </p>
+              </div>
+            </div>
+
+            <div class="field-grid">
+              <label class="input-card" for="bookTitleInput">
+                <span class="input-label">书名</span>
+                <input id="bookTitleInput" type="text" placeholder="例如：小王子" />
+              </label>
+              <label class="input-card" for="bookAuthorInput">
+                <span class="input-label">作者</span>
+                <input id="bookAuthorInput" type="text" placeholder="例如：安托万·德·圣-埃克苏佩里" />
+              </label>
+              <label class="input-card" for="bookThemeInput">
+                <span class="input-label">主题标签</span>
+                <input id="bookThemeInput" type="text" placeholder="例如：寓言 / 成长" />
+              </label>
+              <label class="input-card" for="sourceModeSelect">
+                <span class="input-label">生成方式</span>
+                <select id="sourceModeSelect">
+                  <option value="free_generate">无材料，直接生成</option>
+                  <option value="with_source">有材料，基于材料生成</option>
+                </select>
+              </label>
+            </div>
+
+            <label class="input-card textarea-card" for="bookSubtitleInput">
+              <span class="input-label">一句话定位</span>
+              <textarea id="bookSubtitleInput" rows="2" placeholder="一句话描述这本书的核心价值。"></textarea>
+            </label>
+
+            <label class="input-card textarea-card" for="sourceTextInput">
+              <span class="input-label">可选材料</span>
+              <textarea
+                id="sourceTextInput"
+                rows="7"
+                placeholder="可以粘贴简介、章节摘要、书摘、读书笔记。没有材料也可以直接走自由生成模式。"
+              ></textarea>
+            </label>
+
+            <div class="admin-toolbar">
+              <button id="newDraftBtn" class="ghost-btn" type="button">新建草稿</button>
+              <button id="loadPublishedBtn" class="ghost-btn" type="button">载入当前书籍</button>
+              <button id="generatePromptBtn" class="ghost-btn" type="button">生成 LLM Prompt</button>
+              <button id="addSlideBtn" class="primary-btn" type="button">新增一页</button>
+              <button id="publishPreviewBtn" class="primary-btn" type="button">发布到右侧预览</button>
+              <button id="saveJsonBtn" class="primary-btn" type="button">保存到 JSON</button>
+              <button id="exportJsonBtn" class="primary-btn" type="button">导出 JSON</button>
+            </div>
+            <p id="saveStatus" class="footnote">保存会写入 `data/book-digest/books/` 并同步更新书单索引。</p>
+          </section>
+
+          <section class="admin-workbench">
+            <section class="panel slides-editor-panel">
+              <div class="section-heading">
+                <div>
+                  <p class="section-kicker">Draft Slides</p>
+                  <h2>逐页编辑</h2>
+                </div>
+                <span id="draftSlideCount" class="editor-badge">0 页</span>
+              </div>
+              <div id="slidesEditorList" class="slides-editor-list empty-state">先创建草稿，或载入左侧已发布的书籍。</div>
+            </section>
+
+            <section class="admin-side-panel">
+              <article class="panel prompt-panel">
+                <div class="section-heading">
+                  <div>
+                    <p class="section-kicker">Prompt</p>
+                    <h2>生成用 Prompt</h2>
+                  </div>
+                </div>
+                <textarea id="promptOutput" class="code-output" rows="14" readonly placeholder="点击“生成 LLM Prompt”后，这里会出现可直接复制给模型的提示词。"></textarea>
+              </article>
+
+              <article class="panel publish-preview-panel">
+                <div class="section-heading">
+                  <div>
+                    <p class="section-kicker">Preview</p>
+                    <h2>发布预览</h2>
+                  </div>
+                </div>
+                <div id="adminPreviewMeta" class="preview-meta">还没有发布预览。</div>
+                <div id="adminPreviewSlide" class="admin-preview-slide empty-state">点击“发布到右侧预览”后会显示正式版第一页。</div>
+              </article>
+
+              <article class="panel export-panel">
+                <div class="section-heading">
+                  <div>
+                    <p class="section-kicker">Export</p>
+                    <h2>JSON 输出</h2>
+                  </div>
+                </div>
+                <textarea id="jsonOutput" class="code-output" rows="16" readonly placeholder="导出的 JSON 会显示在这里。"></textarea>
+              </article>
+            </section>
+          </section>
+        </section>
+      </main>
+    </div>
+
+    <script src="../../assets/scripts/book-digest.js"></script>
+  </body>
+</html>

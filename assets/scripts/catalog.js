@@ -1,5 +1,13 @@
 const features = [
   {
+    slug: "book_digest",
+    title: "Book Digest",
+    description: "把一本书压缩成 3 分钟手机翻页阅读，并配套后台审核与 JSON 导出流程。",
+    status: "Available",
+    href: "./features/book_digest/index.html",
+    tags: ["Books", "Reader", "Editor"],
+  },
+  {
     slug: "tax_calculation",
     title: "Tax_calculation",
     description: "中国与美国加州税负对比、预缴税结算与中国补税测算。",
