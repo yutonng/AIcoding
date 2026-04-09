@@ -2,6 +2,14 @@
   "featuredBookId": "围城-钱钟书",
   "books": [
     {
+      "id": "局外人-阿尔贝-加缪",
+      "title": "局外人",
+      "author": "阿尔贝·加缪",
+      "status": "published",
+      "durationLabel": "约 3 分钟",
+      "theme": "未分类"
+    },
+    {
       "id": "百年孤独-加夫列尔-加西亚-马尔克斯",
       "title": "百年孤独",
       "author": "加夫列尔·加西亚·马尔克斯",

@@ -127,10 +127,12 @@
 }
 
 .phone-frame {
+  position: relative;
   width: 430px;
   min-width: 430px;
   max-width: 430px;
   margin: 0 auto;
+  flex: 0 0 430px;
 }
 
 .phone-glow {
@@ -145,9 +147,12 @@
 
 .reader-card {
   position: relative;
+  display: flex;
+  flex-direction: column;
   width: 430px;
   min-width: 430px;
   max-width: 430px;
+  box-sizing: border-box;
   min-height: 760px;
   border-radius: 42px;
   padding: 28px 24px;
@@ -172,6 +177,7 @@
 .reader-card-head {
   justify-content: center;
   align-items: center;
+  flex: 0 0 auto;
   padding-top: 10px;
 }
 
@@ -224,26 +230,12 @@
 }
 
 .reader-progress-row {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: center;
-  gap: 12px;
+  flex: 0 0 auto;
   margin: 18px 0 22px;
 }
 
-.reader-progress-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 9px 13px;
-  border-radius: 999px;
-  font-size: 0.84rem;
-  font-weight: 700;
-  background: rgba(10, 92, 143, 0.08);
-  color: #0a5c8f;
-}
-
 .progress-track {
+  width: 100%;
   height: 6px;
   border-radius: 999px;
   background: rgba(31, 29, 26, 0.08);
@@ -261,10 +253,12 @@
 .reader-slide {
   display: flex;
   align-items: center;
-  min-height: 500px;
+  flex: 1 1 auto;
+  min-height: 0;
   padding: 28px 52px;
   line-height: 1.9;
   font-size: 1.24rem;
+  text-align: left;
 }
 
 .reader-slide-content {
@@ -337,6 +331,9 @@
   }
 
   .reader-card {
+    width: 430px;
+    min-width: 430px;
+    max-width: 430px;
     min-height: 680px;
     border-radius: 32px;
     padding: 24px 18px;

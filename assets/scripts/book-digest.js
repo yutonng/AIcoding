@@ -31,7 +31,6 @@ const elements = {
   adminSection: document.querySelector("#adminSection"),
   libraryList: document.querySelector("#libraryList"),
   readerBookTitle: document.querySelector("#readerBookTitle"),
-  readerProgressBadge: document.querySelector("#readerProgressBadge"),
   readerProgressFill: document.querySelector("#readerProgressFill"),
   readerSlide: document.querySelector("#readerSlide"),
   prevSlideBtn: document.querySelector("#prevSlideBtn"),
@@ -159,7 +158,6 @@ function renderReader() {
 
   if (!book || slides.length === 0) {
     elements.readerBookTitle.textContent = "没有可读内容";
-    elements.readerProgressBadge.textContent = "0 / 0";
     elements.readerProgressFill.style.width = "0%";
     elements.readerSlide.className = "reader-slide empty-state";
     elements.readerSlide.textContent = "请选择左侧的一本书开始阅读。";
@@ -172,7 +170,6 @@ function renderReader() {
   const currentSlide = slides[state.currentSlideIndex];
 
   elements.readerBookTitle.textContent = `《${book.title}》`;
-  elements.readerProgressBadge.textContent = `${state.currentSlideIndex + 1} / ${slides.length}`;
   elements.readerProgressFill.style.width = `${((state.currentSlideIndex + 1) / slides.length) * 100}%`;
   elements.readerSlide.className = "reader-slide";
   elements.readerSlide.innerHTML = `
