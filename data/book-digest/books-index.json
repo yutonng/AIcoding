@@ -2,6 +2,22 @@
   "featuredBookId": "围城-钱钟书",
   "books": [
     {
+      "id": "白夜行-东野圭吾",
+      "title": "白夜行",
+      "author": "东野圭吾",
+      "status": "published",
+      "durationLabel": "约 3 分钟",
+      "theme": "未分类"
+    },
+    {
+      "id": "瓦尔登湖-亨利-戴维-梭罗",
+      "title": "瓦尔登湖",
+      "author": "亨利·戴维·梭罗",
+      "status": "published",
+      "durationLabel": "约 3 分钟",
+      "theme": "未分类"
+    },
+    {
       "id": "局外人-阿尔贝-加缪",
       "title": "局外人",
       "author": "阿尔贝·加缪",
