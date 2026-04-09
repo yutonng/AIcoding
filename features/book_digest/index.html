@@ -41,11 +41,9 @@
               <div class="phone-glow"></div>
               <article class="panel reader-card">
                 <div class="reader-card-head">
-                  <button id="prevSlideBtn" class="reader-nav-btn" type="button" aria-label="上一页">‹</button>
                   <div class="reader-title-block">
                     <h2 id="readerBookTitle">选择一本书</h2>
                   </div>
-                  <button id="nextSlideBtn" class="reader-nav-btn" type="button" aria-label="下一页">›</button>
                 </div>
 
                 <div class="reader-progress-row">
@@ -56,6 +54,9 @@
                 </div>
 
                 <div id="readerSlide" class="reader-slide empty-state">请选择左侧的一本书开始阅读。</div>
+
+                <button id="prevSlideBtn" class="reader-nav-btn reader-nav-btn-left" type="button" aria-label="上一页">‹</button>
+                <button id="nextSlideBtn" class="reader-nav-btn reader-nav-btn-right" type="button" aria-label="下一页">›</button>
               </article>
             </div>
           </section>
@@ -67,9 +68,7 @@
               <div>
                 <p class="section-kicker">Admin</p>
                 <h2>内容生产台</h2>
-                <p class="section-description">
-                  这版原型把草稿保存在浏览器内存与 `localStorage`，发布结果可以预览并导出为 JSON 文件内容。
-                </p>
+                <p class="section-description">直接输入最终稿。段落之间空一行，系统会按空行拆成翻页内容。</p>
               </div>
             </div>
 
@@ -82,89 +81,18 @@
                 <span class="input-label">作者</span>
                 <input id="bookAuthorInput" type="text" placeholder="例如：安托万·德·圣-埃克苏佩里" />
               </label>
-              <label class="input-card" for="bookThemeInput">
-                <span class="input-label">主题标签</span>
-                <input id="bookThemeInput" type="text" placeholder="例如：寓言 / 成长" />
-              </label>
-              <label class="input-card" for="sourceModeSelect">
-                <span class="input-label">生成方式</span>
-                <select id="sourceModeSelect">
-                  <option value="free_generate">无材料，直接生成</option>
-                  <option value="with_source">有材料，基于材料生成</option>
-                </select>
-              </label>
             </div>
 
-            <label class="input-card textarea-card" for="bookSubtitleInput">
-              <span class="input-label">一句话定位</span>
-              <textarea id="bookSubtitleInput" rows="2" placeholder="一句话描述这本书的核心价值。"></textarea>
-            </label>
-
-            <label class="input-card textarea-card" for="sourceTextInput">
-              <span class="input-label">可选材料</span>
-              <textarea
-                id="sourceTextInput"
-                rows="7"
-                placeholder="可以粘贴简介、章节摘要、书摘、读书笔记。没有材料也可以直接走自由生成模式。"
-              ></textarea>
+            <label class="input-card textarea-card" for="bookContentInput">
+              <span class="input-label">内容</span>
+              <textarea id="bookContentInput" rows="18" placeholder="每一页写成一段，段落之间空一行。"></textarea>
             </label>
 
             <div class="admin-toolbar">
-              <button id="newDraftBtn" class="ghost-btn" type="button">新建草稿</button>
               <button id="loadPublishedBtn" class="ghost-btn" type="button">载入当前书籍</button>
-              <button id="generatePromptBtn" class="ghost-btn" type="button">生成 LLM Prompt</button>
-              <button id="addSlideBtn" class="primary-btn" type="button">新增一页</button>
-              <button id="publishPreviewBtn" class="primary-btn" type="button">发布到右侧预览</button>
-              <button id="saveJsonBtn" class="primary-btn" type="button">保存到 JSON</button>
-              <button id="exportJsonBtn" class="primary-btn" type="button">导出 JSON</button>
+              <button id="publishJsonBtn" class="primary-btn" type="button">发布</button>
             </div>
-            <p id="saveStatus" class="footnote">保存会写入 `data/book-digest/books/` 并同步更新书单索引。</p>
-          </section>
-
-          <section class="admin-workbench">
-            <section class="panel slides-editor-panel">
-              <div class="section-heading">
-                <div>
-                  <p class="section-kicker">Draft Slides</p>
-                  <h2>逐页编辑</h2>
-                </div>
-                <span id="draftSlideCount" class="editor-badge">0 页</span>
-              </div>
-              <div id="slidesEditorList" class="slides-editor-list empty-state">先创建草稿，或载入左侧已发布的书籍。</div>
-            </section>
-
-            <section class="admin-side-panel">
-              <article class="panel prompt-panel">
-                <div class="section-heading">
-                  <div>
-                    <p class="section-kicker">Prompt</p>
-                    <h2>生成用 Prompt</h2>
-                  </div>
-                </div>
-                <textarea id="promptOutput" class="code-output" rows="14" readonly placeholder="点击“生成 LLM Prompt”后，这里会出现可直接复制给模型的提示词。"></textarea>
-              </article>
-
-              <article class="panel publish-preview-panel">
-                <div class="section-heading">
-                  <div>
-                    <p class="section-kicker">Preview</p>
-                    <h2>发布预览</h2>
-                  </div>
-                </div>
-                <div id="adminPreviewMeta" class="preview-meta">还没有发布预览。</div>
-                <div id="adminPreviewSlide" class="admin-preview-slide empty-state">点击“发布到右侧预览”后会显示正式版第一页。</div>
-              </article>
-
-              <article class="panel export-panel">
-                <div class="section-heading">
-                  <div>
-                    <p class="section-kicker">Export</p>
-                    <h2>JSON 输出</h2>
-                  </div>
-                </div>
-                <textarea id="jsonOutput" class="code-output" rows="16" readonly placeholder="导出的 JSON 会显示在这里。"></textarea>
-              </article>
-            </section>
+            <p id="saveStatus" class="footnote">发布会写入 `data/book-digest/books/` 并同步更新书单索引。</p>
           </section>
         </section>
       </main>

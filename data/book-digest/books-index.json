@@ -1,21 +1,37 @@
 {
-  "featuredBookId": "the-little-prince",
+  "featuredBookId": "围城-钱钟书",
   "books": [
     {
-      "id": "the-little-prince",
-      "title": "小王子",
-      "author": "安托万·德·圣-埃克苏佩里",
+      "id": "百年孤独-加夫列尔-加西亚-马尔克斯",
+      "title": "百年孤独",
+      "author": "加夫列尔·加西亚·马尔克斯",
       "status": "published",
       "durationLabel": "约 3 分钟",
-      "theme": "寓言 / 成长"
+      "theme": "未分类"
     },
     {
-      "id": "sapiens",
-      "title": "人类简史",
-      "author": "尤瓦尔·赫拉利",
+      "id": "呼兰河传-萧红",
+      "title": "呼兰河传",
+      "author": "萧红",
       "status": "published",
       "durationLabel": "约 3 分钟",
-      "theme": "历史 / 认知"
+      "theme": "未分类"
+    },
+    {
+      "id": "活着-余华",
+      "title": "活着",
+      "author": "余华",
+      "status": "published",
+      "durationLabel": "约 3 分钟",
+      "theme": "未分类"
+    },
+    {
+      "id": "围城-钱钟书",
+      "title": "围城",
+      "author": "钱钟书",
+      "status": "published",
+      "durationLabel": "约 3 分钟",
+      "theme": "未分类"
     }
   ]
 }

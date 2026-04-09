@@ -1,5 +1,5 @@
 const DATA_ROOT = "../../data/book-digest";
-const STORAGE_KEY = "book_digest_admin_state_v1";
+const STORAGE_KEY = "book_digest_admin_state_v2";
 
 const state = {
   catalog: [],
@@ -8,7 +8,6 @@ const state = {
   currentSlideIndex: 0,
   mode: "reader",
   adminDraft: createEmptyDraft(),
-  adminPublishedPreview: null,
 };
 
 function isLocalEnvironment() {
@@ -39,24 +38,10 @@ const elements = {
   nextSlideBtn: document.querySelector("#nextSlideBtn"),
   bookTitleInput: document.querySelector("#bookTitleInput"),
   bookAuthorInput: document.querySelector("#bookAuthorInput"),
-  bookThemeInput: document.querySelector("#bookThemeInput"),
-  sourceModeSelect: document.querySelector("#sourceModeSelect"),
-  bookSubtitleInput: document.querySelector("#bookSubtitleInput"),
-  sourceTextInput: document.querySelector("#sourceTextInput"),
-  newDraftBtn: document.querySelector("#newDraftBtn"),
+  bookContentInput: document.querySelector("#bookContentInput"),
   loadPublishedBtn: document.querySelector("#loadPublishedBtn"),
-  generatePromptBtn: document.querySelector("#generatePromptBtn"),
-  addSlideBtn: document.querySelector("#addSlideBtn"),
-  publishPreviewBtn: document.querySelector("#publishPreviewBtn"),
-  saveJsonBtn: document.querySelector("#saveJsonBtn"),
-  exportJsonBtn: document.querySelector("#exportJsonBtn"),
+  publishJsonBtn: document.querySelector("#publishJsonBtn"),
   saveStatus: document.querySelector("#saveStatus"),
-  draftSlideCount: document.querySelector("#draftSlideCount"),
-  slidesEditorList: document.querySelector("#slidesEditorList"),
-  promptOutput: document.querySelector("#promptOutput"),
-  adminPreviewMeta: document.querySelector("#adminPreviewMeta"),
-  adminPreviewSlide: document.querySelector("#adminPreviewSlide"),
-  jsonOutput: document.querySelector("#jsonOutput"),
 };
 
 function createEmptyDraft() {
@@ -64,22 +49,7 @@ function createEmptyDraft() {
     id: "",
     title: "",
     author: "",
-    theme: "",
-    status: "draft",
-    sourceMode: "free_generate",
-    sourceText: "",
-    aiDraft: {
-      subtitle: "",
-      slides: [
-        {
-          text: "",
-        },
-      ],
-    },
-    published: {
-      subtitle: "",
-      slides: [],
-    },
+    content: "",
     updatedAt: new Date().toISOString(),
   };
 }
@@ -104,6 +74,23 @@ function escapeHtml(value = "") {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
+}
+
+function setSaveStatus(message, isError = false) {
+  if (!elements.saveStatus) {
+    return;
+  }
+
+  elements.saveStatus.textContent = message;
+  elements.saveStatus.style.color = isError ? "#9f2d2d" : "";
+}
+
+function buildSlidesFromContent(content) {
+  return content
+    .split(/\n\s*\n+/)
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .map((text) => ({ text }));
 }
 
 async function loadPublishedBooks() {
@@ -134,11 +121,7 @@ async function loadPublishedBooks() {
 }
 
 function getCurrentBook() {
-  if (!state.currentBookId) {
-    return null;
-  }
-
-  return state.booksById[state.currentBookId] || null;
+  return state.currentBookId ? state.booksById[state.currentBookId] || null : null;
 }
 
 function getCurrentSlides() {
@@ -161,7 +144,6 @@ function renderLibrary() {
   elements.libraryList.innerHTML = state.catalog
     .map((book) => {
       const activeClass = book.id === state.currentBookId ? " is-active" : "";
-
       return `
         <button class="library-item${activeClass}" type="button" data-book-id="${escapeHtml(book.id)}">
           <h3>《${escapeHtml(book.title)}》</h3>
@@ -186,8 +168,7 @@ function renderReader() {
     return;
   }
 
-  const boundedIndex = Math.min(state.currentSlideIndex, slides.length - 1);
-  state.currentSlideIndex = Math.max(boundedIndex, 0);
+  state.currentSlideIndex = Math.max(0, Math.min(state.currentSlideIndex, slides.length - 1));
   const currentSlide = slides[state.currentSlideIndex];
 
   elements.readerBookTitle.textContent = `《${book.title}》`;
@@ -219,85 +200,23 @@ function renderMode() {
 }
 
 function renderAdminForm() {
-  const draft = state.adminDraft;
-  elements.bookTitleInput.value = draft.title || "";
-  elements.bookAuthorInput.value = draft.author || "";
-  elements.bookThemeInput.value = draft.theme || "";
-  elements.sourceModeSelect.value = draft.sourceMode || "free_generate";
-  elements.bookSubtitleInput.value = draft.aiDraft?.subtitle || "";
-  elements.sourceTextInput.value = draft.sourceText || "";
-}
-
-function renderSlidesEditor() {
-  const slides = state.adminDraft?.aiDraft?.slides || [];
-  elements.draftSlideCount.textContent = `${slides.length} 页`;
-
-  if (slides.length === 0) {
-    elements.slidesEditorList.className = "slides-editor-list empty-state";
-    elements.slidesEditorList.textContent = "还没有草稿页。点击“新增一页”开始。";
-    return;
-  }
-
-  elements.slidesEditorList.className = "slides-editor-list";
-  elements.slidesEditorList.innerHTML = slides
-    .map(
-      (slide, index) => `
-        <article class="slide-editor-card">
-          <div class="slide-editor-head">
-            <h3>第 ${index + 1} 页</h3>
-            <div class="slide-editor-actions">
-              <button class="slide-action-btn" type="button" data-action="move-up" data-slide-index="${index}">上移</button>
-              <button class="slide-action-btn" type="button" data-action="move-down" data-slide-index="${index}">下移</button>
-              <button class="slide-action-btn" type="button" data-action="duplicate" data-slide-index="${index}">复制</button>
-              <button class="slide-action-btn" type="button" data-action="delete" data-slide-index="${index}">删除</button>
-            </div>
-          </div>
-          <textarea class="slide-editor-textarea" data-slide-index="${index}" placeholder="每页保留 1-2 句话，控制在 45-90 字左右。">${escapeHtml(
-            slide.text || "",
-          )}</textarea>
-        </article>
-      `,
-    )
-    .join("");
-}
-
-function renderAdminPreview() {
-  const preview = state.adminPublishedPreview;
-
-  if (!preview || !Array.isArray(preview.published?.slides) || preview.published.slides.length === 0) {
-    elements.adminPreviewMeta.textContent = "还没有发布预览。";
-    elements.adminPreviewSlide.className = "admin-preview-slide empty-state";
-    elements.adminPreviewSlide.textContent = "点击“发布到右侧预览”后会显示正式版第一页。";
-    return;
-  }
-
-  elements.adminPreviewMeta.textContent = `${preview.title || "未命名书籍"} · ${preview.author || "未知作者"} · 共 ${preview.published.slides.length} 页`;
-  elements.adminPreviewSlide.className = "admin-preview-slide";
-  elements.adminPreviewSlide.textContent = preview.published.slides[0]?.text || "";
+  elements.bookTitleInput.value = state.adminDraft.title || "";
+  elements.bookAuthorInput.value = state.adminDraft.author || "";
+  elements.bookContentInput.value = state.adminDraft.content || "";
 }
 
 function syncDraftFromForm() {
-  const draft = state.adminDraft;
-  draft.title = elements.bookTitleInput.value.trim();
-  draft.author = elements.bookAuthorInput.value.trim();
-  draft.theme = elements.bookThemeInput.value.trim();
-  draft.sourceMode = elements.sourceModeSelect.value;
-  draft.sourceText = elements.sourceTextInput.value.trim();
-  draft.aiDraft.subtitle = elements.bookSubtitleInput.value.trim();
-  draft.id = slugifyBookId(draft.title, draft.author);
-  draft.updatedAt = new Date().toISOString();
+  state.adminDraft.title = elements.bookTitleInput.value.trim();
+  state.adminDraft.author = elements.bookAuthorInput.value.trim();
+  state.adminDraft.content = elements.bookContentInput.value;
+  state.adminDraft.id = slugifyBookId(state.adminDraft.title, state.adminDraft.author);
+  state.adminDraft.updatedAt = new Date().toISOString();
   persistDraft();
 }
 
 function persistDraft() {
   try {
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify({
-        adminDraft: state.adminDraft,
-        adminPublishedPreview: state.adminPublishedPreview,
-      }),
-    );
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ adminDraft: state.adminDraft }));
   } catch (error) {
     console.warn("Failed to persist admin draft.", error);
   }
@@ -314,9 +233,6 @@ function hydrateDraftFromStorage() {
     if (parsed.adminDraft) {
       state.adminDraft = parsed.adminDraft;
     }
-    if (parsed.adminPublishedPreview) {
-      state.adminPublishedPreview = parsed.adminPublishedPreview;
-    }
   } catch (error) {
     console.warn("Failed to restore admin draft.", error);
   }
@@ -332,156 +248,58 @@ function loadCurrentPublishedIntoAdmin() {
     id: book.id || "",
     title: book.title || "",
     author: book.author || "",
-    theme: book.theme || "",
-    status: "draft",
-    sourceMode: book.sourceMode || "free_generate",
-    sourceText: book.sourceText || "",
-    aiDraft: deepClone(book.aiDraft || { subtitle: "", slides: [] }),
-    published: deepClone(book.published || { subtitle: "", slides: [] }),
+    content: (book.published?.slides || []).map((slide) => slide.text || "").join("\n\n"),
     updatedAt: new Date().toISOString(),
   };
 
-  state.adminPublishedPreview = deepClone(book);
   persistDraft();
   renderAdminForm();
-  renderSlidesEditor();
-  renderAdminPreview();
-  renderExportOutput("");
+  setSaveStatus("已载入当前书籍，可以直接编辑后重新发布。");
 }
 
-function newDraft() {
-  state.adminDraft = createEmptyDraft();
-  state.adminPublishedPreview = null;
-  elements.promptOutput.value = "";
-  renderAdminForm();
-  renderSlidesEditor();
-  renderAdminPreview();
-  renderExportOutput("");
-  persistDraft();
-}
-
-function addSlide(text = "") {
-  state.adminDraft.aiDraft.slides.push({ text });
-  state.adminDraft.updatedAt = new Date().toISOString();
-  renderSlidesEditor();
-  persistDraft();
-}
-
-function moveSlide(index, direction) {
-  const slides = state.adminDraft.aiDraft.slides;
-  const nextIndex = index + direction;
-  if (nextIndex < 0 || nextIndex >= slides.length) {
-    return;
-  }
-
-  [slides[index], slides[nextIndex]] = [slides[nextIndex], slides[index]];
-  renderSlidesEditor();
-  persistDraft();
-}
-
-function duplicateSlide(index) {
-  const slide = state.adminDraft.aiDraft.slides[index];
-  if (!slide) {
-    return;
-  }
-
-  state.adminDraft.aiDraft.slides.splice(index + 1, 0, deepClone(slide));
-  renderSlidesEditor();
-  persistDraft();
-}
-
-function deleteSlide(index) {
-  const slides = state.adminDraft.aiDraft.slides;
-  if (slides.length <= 1) {
-    slides[0].text = "";
-  } else {
-    slides.splice(index, 1);
-  }
-  renderSlidesEditor();
-  persistDraft();
-}
-
-function publishPreview() {
+function buildPublishedPayload() {
   syncDraftFromForm();
-  const preview = deepClone(state.adminDraft);
-  preview.status = "published";
-  preview.published = {
-    subtitle: preview.aiDraft.subtitle,
-    slides: deepClone(preview.aiDraft.slides).filter((slide) => slide.text.trim()),
+  const slides = buildSlidesFromContent(state.adminDraft.content || "");
+
+  if (!state.adminDraft.title) {
+    throw new Error("请先填写书名。");
+  }
+
+  if (slides.length === 0) {
+    throw new Error("请先填写内容，并至少保留一个段落。");
+  }
+
+  return {
+    id: slugifyBookId(state.adminDraft.title, state.adminDraft.author),
+    title: state.adminDraft.title,
+    author: state.adminDraft.author,
+    status: "published",
+    sourceMode: "manual",
+    sourceText: state.adminDraft.content,
+    aiDraft: {
+      subtitle: "",
+      slides,
+    },
+    published: {
+      subtitle: "",
+      slides,
+    },
+    updatedAt: new Date().toISOString(),
   };
-  preview.updatedAt = new Date().toISOString();
-  state.adminPublishedPreview = preview;
-  renderAdminPreview();
-  renderExportOutput("");
-  persistDraft();
 }
 
-function generatePrompt() {
-  syncDraftFromForm();
-  const draft = state.adminDraft;
-  const withSource = draft.sourceMode === "with_source" && draft.sourceText;
-  const prompt = [
-    "你是一名资深中文内容编辑，需要把一本书压缩成适合手机竖屏翻页阅读的 3 分钟版。",
-    "",
-    "输出要求：",
-    "1. 输出 JSON，不要输出额外说明。",
-    '2. JSON 结构必须为 {"subtitle": "...", "slides": [{"text": "..."}]}。',
-    "3. slides 控制在 10-15 页。",
-    "4. 每页只写 1-2 句话，语言流畅，适合独立成页阅读。",
-    "5. 不要强行套固定结构，以这本书本身最自然的节奏组织内容。",
-    "6. 避免空话、避免过度剧透式复述，优先保留真正有记忆点的信息。",
-    "",
-    `书名：${draft.title || "未填写"}`,
-    `作者：${draft.author || "未填写"}`,
-    `一句话定位：${draft.aiDraft.subtitle || "未填写"}`,
-    `生成模式：${withSource ? "基于材料生成" : "自由生成"}`,
-    "",
-    withSource ? "参考材料：" : "说明：当前没有提供材料，请基于书名与作者生成一版可供人工审核的初稿。",
-    withSource ? draft.sourceText : "",
-  ]
-    .filter(Boolean)
-    .join("\n");
+async function publishJson() {
+  let payload;
 
-  elements.promptOutput.value = prompt;
-}
-
-function renderExportOutput(text) {
-  elements.jsonOutput.value = text;
-}
-
-function setSaveStatus(message, isError = false) {
-  if (!elements.saveStatus) {
+  try {
+    payload = buildPublishedPayload();
+  } catch (error) {
+    setSaveStatus(error instanceof Error ? error.message : "发布失败。", true);
     return;
   }
 
-  elements.saveStatus.textContent = message;
-  elements.saveStatus.style.color = isError ? "#9f2d2d" : "";
-}
-
-function exportJson() {
-  syncDraftFromForm();
-  const record = deepClone(state.adminPublishedPreview || state.adminDraft);
-  record.id = slugifyBookId(record.title, record.author);
-  record.updatedAt = new Date().toISOString();
-  if (!record.published?.slides?.length) {
-    record.published = {
-      subtitle: record.aiDraft.subtitle,
-      slides: deepClone(record.aiDraft.slides).filter((slide) => slide.text.trim()),
-    };
-  }
-  renderExportOutput(JSON.stringify(record, null, 2));
-}
-
-async function saveJson() {
-  syncDraftFromForm();
-
-  if (!state.adminPublishedPreview) {
-    publishPreview();
-  }
-
-  const payload = deepClone(state.adminPublishedPreview || state.adminDraft);
-  elements.saveJsonBtn.disabled = true;
-  setSaveStatus("正在保存到 JSON 文件...");
+  elements.publishJsonBtn.disabled = true;
+  setSaveStatus("正在发布并写入 JSON...");
 
   try {
     const response = await fetch("/api/book-digest-save", {
@@ -494,12 +312,11 @@ async function saveJson() {
 
     const result = await response.json();
     if (!response.ok || !result.ok) {
-      throw new Error(result.error || "保存失败。");
+      throw new Error(result.error || "发布失败。");
     }
 
     const savedRecord = deepClone(payload);
     savedRecord.id = result.id || savedRecord.id;
-    savedRecord.status = "published";
     savedRecord.updatedAt = result.updatedAt || new Date().toISOString();
 
     state.booksById[savedRecord.id] = savedRecord;
@@ -507,7 +324,7 @@ async function saveJson() {
     const catalogSummary = {
       ...savedRecord,
       durationLabel: "约 3 分钟",
-      theme: savedRecord.theme || "未分类",
+      theme: "未分类",
     };
 
     if (existingCatalogIndex >= 0) {
@@ -518,18 +335,14 @@ async function saveJson() {
 
     state.currentBookId = savedRecord.id;
     state.currentSlideIndex = 0;
-    state.adminPublishedPreview = savedRecord;
-    persistDraft();
     renderLibrary();
     renderReader();
-    renderAdminPreview();
-    renderExportOutput(JSON.stringify(savedRecord, null, 2));
-    setSaveStatus(`已保存到 JSON：${result.id}.json`);
+    setSaveStatus(`已发布并写入 JSON：${savedRecord.id}.json`);
   } catch (error) {
     console.error(error);
-    setSaveStatus(error instanceof Error ? error.message : "保存失败。", true);
+    setSaveStatus(error instanceof Error ? error.message : "发布失败。", true);
   } finally {
-    elements.saveJsonBtn.disabled = false;
+    elements.publishJsonBtn.disabled = false;
   }
 }
 
@@ -587,66 +400,12 @@ function bindEvents() {
     }
   });
 
-  [
-    elements.bookTitleInput,
-    elements.bookAuthorInput,
-    elements.bookThemeInput,
-    elements.sourceModeSelect,
-    elements.bookSubtitleInput,
-    elements.sourceTextInput,
-  ].forEach((input) => {
+  [elements.bookTitleInput, elements.bookAuthorInput, elements.bookContentInput].forEach((input) => {
     input?.addEventListener("input", syncDraftFromForm);
   });
 
-  elements.newDraftBtn?.addEventListener("click", newDraft);
   elements.loadPublishedBtn?.addEventListener("click", loadCurrentPublishedIntoAdmin);
-  elements.generatePromptBtn?.addEventListener("click", generatePrompt);
-  elements.addSlideBtn?.addEventListener("click", () => addSlide(""));
-  elements.publishPreviewBtn?.addEventListener("click", publishPreview);
-  elements.saveJsonBtn?.addEventListener("click", saveJson);
-  elements.exportJsonBtn?.addEventListener("click", exportJson);
-
-  elements.slidesEditorList?.addEventListener("input", (event) => {
-    const textarea = event.target.closest("[data-slide-index]");
-    if (!textarea) {
-      return;
-    }
-
-    const index = Number(textarea.dataset.slideIndex);
-    if (!Number.isFinite(index) || !state.adminDraft.aiDraft.slides[index]) {
-      return;
-    }
-
-    state.adminDraft.aiDraft.slides[index].text = textarea.value;
-    state.adminDraft.updatedAt = new Date().toISOString();
-    persistDraft();
-  });
-
-  elements.slidesEditorList?.addEventListener("click", (event) => {
-    const button = event.target.closest("[data-action]");
-    if (!button) {
-      return;
-    }
-
-    const index = Number(button.dataset.slideIndex);
-    const action = button.dataset.action;
-    if (!Number.isFinite(index)) {
-      return;
-    }
-
-    if (action === "move-up") {
-      moveSlide(index, -1);
-    }
-    if (action === "move-down") {
-      moveSlide(index, 1);
-    }
-    if (action === "duplicate") {
-      duplicateSlide(index);
-    }
-    if (action === "delete") {
-      deleteSlide(index);
-    }
-  });
+  elements.publishJsonBtn?.addEventListener("click", publishJson);
 }
 
 async function initialize() {
@@ -654,19 +413,15 @@ async function initialize() {
     hydrateDraftFromStorage();
   } else {
     state.mode = "reader";
-  }
-
-  if (!canUseAdmin) {
     elements.topbarPanel?.classList.add("hidden");
     elements.adminSection?.classList.add("hidden");
   }
 
   bindEvents();
   renderMode();
+
   if (canUseAdmin) {
     renderAdminForm();
-    renderSlidesEditor();
-    renderAdminPreview();
   }
 
   try {
