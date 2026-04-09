@@ -2,7 +2,7 @@ const features = [
   {
     slug: "book_digest",
     title: "Book Digest",
-    description: "把一本书压缩成 3 分钟手机翻页阅读，并配套后台审核与 JSON 导出流程。",
+    description: "3 分钟读完一本著作；",
     status: "Available",
     href: "./features/book_digest/index.html",
     tags: ["Books", "Reader", "Editor"],
